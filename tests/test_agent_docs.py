@@ -93,6 +93,9 @@ def test_example_catalog_and_docs_site(tmp_path: Path):
     assert (tmp_path / "docs_site" / "cookbook.html").exists()
     assert (tmp_path / "docs_site" / "api-reference.html").exists()
     assert (tmp_path / "docs_site" / "faq.html").exists()
+    assert (tmp_path / "docs_site" / "showcase-bundles" / "ecg_public" / "report.html").exists()
+    assert (tmp_path / "docs_site" / "showcase-bundles" / "macro_public" / "dataset_card.md").exists()
+    assert (tmp_path / "docs_site" / "showcase-bundles" / "climate_public" / "handoff_index_min.json").exists()
     assert (tmp_path / "docs_site" / "search-index.json").exists()
     assert (tmp_path / "docs_site" / "api-manifest.json").exists()
 

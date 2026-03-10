@@ -53,7 +53,8 @@ def test_docs_site_exports_playbooks_starters_and_notebooks(tmp_path: Path):
     assert (tmp_path / "site" / "starters" / "first-success-notebook" / "README.md").exists()
     assert len(site.notebook_files) >= 2
     assert len(site.starter_projects) >= 5
+    assert len(site.showcase_bundles) >= 5
 
     html = (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
-    assert "Playbooks" in html
-    assert "Starter Kits" in html
+    assert "Workflows" in html
+    assert "Starter Projects" in html

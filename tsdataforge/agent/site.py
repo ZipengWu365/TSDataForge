@@ -257,6 +257,7 @@ class DocsSiteResult:
     zh_pages: list[str] = field(default_factory=list)
     notebook_files: list[str] = field(default_factory=list)
     starter_projects: list[str] = field(default_factory=list)
+    showcase_bundles: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -269,17 +270,17 @@ def _tr(lang: str, en: str, zh: str) -> str:
 NAV_ITEMS = [
     ("index.html", "Docs", "文档首页"),
     ("getting-started.html", "Quickstart", "快速上手"),
-    ("handoff.html", "Handoff", "交接路径"),
-    ("showcase.html", "Showcase", "展示案例"),
-    ("tutorials.html", "Tutorials", "教程路径"),
-    ("playbooks.html", "Playbooks", "使用剧本"),
-    ("starter-kits.html", "Starter Kits", "起步模板"),
+    ("handoff.html", "Handoff", "交接"),
+    ("showcase.html", "Showcase", "案例展示"),
+    ("tutorials.html", "Tutorials", "教程"),
+    ("playbooks.html", "Workflows", "工作流"),
+    ("starter-kits.html", "Starter Projects", "起步项目"),
     ("positioning.html", "Positioning", "生态定位"),
     ("cookbook.html", "Examples", "案例库"),
     ("taskification.html", "Taskification", "任务化"),
-    ("agent-playbook.html", "Agent Playbook", "Agent 手册"),
+    ("agent-playbook.html", "Agent Guide", "Agent 指南"),
     ("use-cases.html", "Use Cases", "应用场景"),
-    ("rollout.html", "Adoption", "扩散与承载"),
+    ("rollout.html", "Release", "发布与传播"),
     ("api-reference.html", "API", "API"),
     ("faq.html", "FAQ", "FAQ"),
 ]
@@ -291,7 +292,7 @@ CATEGORY_LABELS = {
     "control_causal": ("Control / causal / counterfactual", "控制 / 因果 / 反事实"),
     "integration": ("Integrations", "外部接入"),
     "agent": ("Agent & assets", "Agent 与资产"),
-    "launch": ("Launch & adoption", "扩散 / 文档 / 社区"),
+    "launch": ("Release & docs", "发布 / 文档 / 社区"),
     "live_similarity": ("Live popularity & market similarity", "热点关注度与市场相似性"),
 }
 
@@ -402,10 +403,9 @@ def _page_title(lang: str, slug: str) -> str:
 
 
 def _switch_href(lang: str, slug: str, level: int = 0) -> str:
-    prefix = "../" * level
     if lang.startswith("zh"):
-        return f"{prefix}{slug}"
-    return f"{prefix}zh/{slug}"
+        return f"{'../' * (level + 1)}{slug}"
+    return f"{'../' * level}zh/{slug}"
 
 
 
@@ -661,7 +661,7 @@ def _playbook_cards(items: list[Playbook], *, lang: str, starter_prefix: str = "
                 f"<div class='pills'>{_scenario_badges(item.scenario_ids, lang=lang)}</div>"
                 f"<p class='small'>{escape(_tr(lang, 'Examples', '案例'))}: {examples or '—'}</p>"
                 f"<p class='small'>{escape(_tr(lang, 'APIs', 'API'))}: {apis or '—'}</p>"
-                f"<p><a href='{starter_href}'>{escape(_tr(lang, 'Open the matching starter kit', '打开对应 starter kit'))}</a></p>",
+                f"<p><a href='{starter_href}'>{escape(_tr(lang, 'Open the matching starter project', '打开对应起步项目'))}</a></p>",
             )
         )
     return "<div class='grid'>" + ''.join(cards) + "</div>"
@@ -680,10 +680,107 @@ def _starter_cards(items: list[StarterKit], *, lang: str) -> str:
                 f"<div class='badges'>{_environment_badges(item.environment_ids, lang=lang)}</div>"
                 f"<p class='small'>{escape(_tr(lang, 'Files generated', '会生成的文件'))}: {escape(', '.join(item.generated_files))}</p>"
                 f"<p class='small'>{escape(_tr(lang, 'Included notebooks', '包含的 notebook'))}: {notebook_links or '—'}</p>"
-                f"<p><a href='starters/{escape(item.starter_id)}/README.md'>{escape(_tr(lang, 'Open starter README', '打开 starter README'))}</a></p>",
+                f"<p><a href='starters/{escape(item.starter_id)}/README.md'>{escape(_tr(lang, 'Open project README', '打开项目 README'))}</a></p>",
             )
         )
     return "<div class='grid'>" + ''.join(cards) + "</div>"
+
+
+def _showcase_specs(lang: str) -> list[dict[str, str]]:
+    return [
+        {
+            "group": "public",
+            "section_id": "ecg",
+            "scenario": "ecg_public",
+            "title": _tr(lang, "Public ECG arrhythmia handoff", "公开 ECG 心律失常交接"),
+            "summary": _tr(lang, "Real ECG windows from a public MIT-BIH excerpt bundled with SciPy. Best next step: event or anomaly review.", "真实 ECG 窗口，适合先看事件检测或异常检测。"),
+            "command": "python -m tsdataforge demo --scenario ecg_public --output ecg_bundle",
+        },
+        {
+            "group": "public",
+            "section_id": "macro",
+            "scenario": "macro_public",
+            "title": _tr(lang, "Public US macro handoff", "公开美国宏观序列交接"),
+            "summary": _tr(lang, "Inflation, unemployment, and T-bill windows from public macro data. Best next step: regime or forecasting review.", "基于公开宏观数据的通胀、失业和短期利率窗口，适合先看 regime 或 forecasting。"),
+            "command": "python -m tsdataforge demo --scenario macro_public --output macro_bundle",
+        },
+        {
+            "group": "public",
+            "section_id": "climate",
+            "scenario": "climate_public",
+            "title": _tr(lang, "Public climate CO2 handoff", "公开气候 CO2 序列交接"),
+            "summary": _tr(lang, "Weekly atmospheric CO2 observations with trend, seasonality, and missingness.", "真实周度大气 CO2 观测，带趋势、周期和缺失。"),
+            "command": "python -m tsdataforge demo --scenario climate_public --output climate_bundle",
+        },
+        {
+            "group": "public",
+            "section_id": "sunspots",
+            "scenario": "sunspots_public",
+            "title": _tr(lang, "Public sunspot cycle handoff", "公开太阳黑子周期交接"),
+            "summary": _tr(lang, "Physical-science sequence with long cycles and clean periodic structure.", "面向物理科学的长周期序列，适合先看周期结构和 report。"),
+            "command": "python -m tsdataforge demo --scenario sunspots_public --output sunspots_bundle",
+        },
+        {
+            "group": "synthetic",
+            "section_id": "icu",
+            "scenario": "icu_vitals",
+            "title": _tr(lang, "Synthetic ICU vitals handoff", "合成 ICU 生命体征交接"),
+            "summary": _tr(lang, "Deterministic critical-care style bundle for demos and testing.", "适合演示和测试的 ICU 风格合成 bundle。"),
+            "command": "python -m tsdataforge demo --scenario icu_vitals --output icu_bundle",
+        },
+        {
+            "group": "synthetic",
+            "section_id": "macro_regime",
+            "scenario": "macro_regime",
+            "title": _tr(lang, "Synthetic macro regime handoff", "合成宏观 regime 交接"),
+            "summary": _tr(lang, "Deterministic regime-switching macro demo.", "适合稳定复现的宏观 regime 切换 demo。"),
+            "command": "python -m tsdataforge demo --scenario macro_regime --output macro_regime_bundle",
+        },
+        {
+            "group": "synthetic",
+            "section_id": "factory",
+            "scenario": "factory_sensor",
+            "title": _tr(lang, "Synthetic factory sensor handoff", "合成工厂传感器交接"),
+            "summary": _tr(lang, "Maintenance and drift flavored sensor bundle for industrial demos.", "适合工业演示的工厂传感器 drift / maintenance bundle。"),
+            "command": "python -m tsdataforge demo --scenario factory_sensor --output factory_bundle",
+        },
+    ]
+
+
+def _showcase_bundle_href(lang: str, scenario: str, artifact: str) -> str:
+    prefix = "../" if lang.startswith("zh") else ""
+    return f"{prefix}showcase-bundles/{scenario}/{artifact}"
+
+
+def _showcase_link_row(lang: str, scenario: str) -> str:
+    links = [
+        (_tr(lang, "Open full report", "查看完整报告"), "report.html"),
+        (_tr(lang, "Open dataset card", "查看数据卡"), "dataset_card.md"),
+        (_tr(lang, "Open handoff index", "查看 handoff 索引"), "handoff_index_min.json"),
+    ]
+    return "<div class='badges'>" + "".join(
+        f"<a class='badge' href='{_showcase_bundle_href(lang, scenario, artifact)}'>{escape(label)}</a>"
+        for label, artifact in links
+    ) + "</div>"
+
+
+def _showcase_card(spec: dict[str, str], *, lang: str, include_showcase_link: bool = False) -> str:
+    extra = ""
+    if include_showcase_link:
+        extra = (
+            "<p><a href='showcase.html#"
+            + escape(spec["section_id"])
+            + "'>"
+            + escape(_tr(lang, "Open showcase page", "打开案例页"))
+            + "</a></p>"
+        )
+    return _card(
+        spec["title"],
+        f"<p>{escape(spec['summary'])}</p>"
+        f"<pre><code>{escape(spec['command'])}</code></pre>"
+        f"{_showcase_link_row(lang, spec['scenario'])}"
+        f"{extra}",
+    )
 
 
 
@@ -894,7 +991,7 @@ def _index_page(lang: str, catalog: list[ExampleRecipe], tutorials: list[Tutoria
     featured_envs = recommend_environments('notebook script agent docs release', top_k=4, language=lang)
     body = _hero(
         _tr(lang, 'Turn raw time-series files into reports, handoff bundles, and agent-ready next actions', 'TSDataForge：把原始时间序列文件变成报告、handoff bundle 和 agent-ready next actions'),
-        _tr(lang, 'TSDataForge is a Python library for one main job: turn a time-series dataset asset into something that is easy to understand, report, hand off, and route into the right downstream task. The fastest public path is intentionally narrow: dataset -> report -> handoff bundle -> next action.', 'TSDataForge 是一个 Python 库，主要做四件事：把时间序列结构写成可执行程序、生成可复用数据集、用联动 EDA 报告描述真实数据，以及把时序资产转成真正可供人和 agent 使用的任务数据集。'),
+        _tr(lang, 'Use one command or one function call to turn a time-series asset into a report, a dataset card, a compact context, and a clear next step.', '用一条命令或一次函数调用，把时序数据资产变成报告、数据卡、紧凑上下文和明确下一步。'),
         ['dataset reports', 'handoff bundles', 'agent-ready assets', 'real public demos', 'schema-first'],
         pills=[f'{len(catalog)} examples', f'{len(tutorials)} tutorial tracks', f'{api_ref.n_symbols} public symbols'],
     )
@@ -909,15 +1006,14 @@ def _index_page(lang: str, catalog: list[ExampleRecipe], tutorials: list[Tutoria
         ('environments', _tr(lang, 'Which environment should I use', '在哪种环境下最合适')),
         ('api-map', _tr(lang, 'API map by intent', '按意图看的 API 地图')),
         ('examples', _tr(lang, 'Open these first', '先打开这些内容')),
-        ('hot-now', _tr(lang, 'Hot right now', '最近值得看的热点案例')),
+        ('hot-now', _tr(lang, 'Public data examples', '公共数据案例')),
     ])
-    body += f"<div class='section' id='flagship'><div class='kicker'>Real public demos</div><h2>{escape(_tr(lang, 'Three real public demos that make the product credible immediately', '三个能立刻建立可信度的真实公开数据案例'))}</h2><div class='grid'>"
-    body += _card(_tr(lang, 'Public ECG arrhythmia handoff', '公开 ECG 心律失常交接 bundle'), "<p>" + escape(_tr(lang, 'Real ECG windows from a public MIT-BIH excerpt bundled with SciPy. Best next step: event or anomaly review.', '来自 SciPy 打包 MIT-BIH 片段的真实 ECG 窗口。最佳下一步：event 或 anomaly 分析。')) + "</p><pre><code>python -m tsdataforge demo --scenario ecg_public --output ecg_bundle</code></pre><p><a href='showcase.html'>" + escape(_tr(lang, 'Open showcase', '打开 showcase')) + "</a></p>")
-    body += _card(_tr(lang, 'Public US macro handoff', '公开美国宏观时间序列交接 bundle'), "<p>" + escape(_tr(lang, 'Real macro windows built from public quarterly data: inflation, unemployment, and T-bill rate. Best next step: regime or forecasting review.', '基于真实公开季度数据构建的宏观窗口：通胀、失业与国库券利率。最佳下一步：regime 或 forecasting 分析。')) + "</p><pre><code>python -m tsdataforge demo --scenario macro_public --output macro_public_bundle</code></pre><p><a href='showcase.html'>" + escape(_tr(lang, 'Open showcase', '打开 showcase')) + "</a></p>")
-    body += _card(_tr(lang, 'Public climate CO₂ handoff', '公开气候 CO₂ 时间序列交接 bundle'), "<p>" + escape(_tr(lang, 'Real weekly atmospheric CO₂ observations with trend, seasonality, and missingness. Best next step: forecasting or missingness review.', '真实周度大气 CO₂ 观测，带趋势、周期和缺失。最佳下一步：forecasting 或 missingness 分析。')) + "</p><pre><code>python -m tsdataforge demo --scenario climate_public --output climate_bundle</code></pre><p><a href='showcase.html'>" + escape(_tr(lang, 'Open showcase', '打开 showcase')) + "</a></p>")
+    body += f"<div class='section' id='flagship'><div class='kicker'>Real public demos</div><h2>{escape(_tr(lang, 'Start here: three real public demos', '先看这里：三个真实公开数据案例'))}</h2><div class='grid'>"
+    for spec in [item for item in _showcase_specs(lang) if item["group"] == "public"][:3]:
+        body += _showcase_card(spec, lang=lang, include_showcase_link=True)
     body += '</div></div>'
     body += f"<div class='section' id='what'><div class='grid'>"
-    body += _card(_tr(lang, 'What TSDataForge is', 'TSDataForge 是什么'), '<p>' + escape(_tr(lang, 'It is not only a synthetic generator. It is a structure-first time-series library that links four layers together: executable structure specs, reusable sequence assets, task-specific datasets, and explanation/reporting surfaces.', '它不只是一个合成器，而是一个 structure-first 的时间序列库，把四层连在一起：可执行结构规范、可复用序列资产、任务专有数据集，以及解释 / 报告表层。')) + '</p>')
+    body += _card(_tr(lang, 'What TSDataForge is', 'TSDataForge 是什么'), '<p>' + escape(_tr(lang, 'It is a time-series asset layer: load data, explain it, package it, and route it into the next task.', '它是一个时序数据资产层：载入数据、解释数据、打包数据，并把它路由到下一步任务。')) + '</p>')
     body += _card(_tr(lang, 'What it is not', '它不是什么'), _bullets([
         _tr(lang, 'It is not a replacement for heavy simulators such as robotics or physics engines.', '它不是用来替代大型机器人或物理仿真器的。'),
         _tr(lang, 'It is not only a plotting library; visualization is the explanation layer, not the whole product.', '它也不只是画图库；可视化是解释层，而不是全部产品。'),
@@ -965,14 +1061,14 @@ def _index_page(lang: str, catalog: list[ExampleRecipe], tutorials: list[Tutoria
         [_tr(lang, 'I want the shortest path to training arrays', '我只想最快拿到训练数组'), '<code>generate_dataset</code>', '<code>system_identification</code>'],
         [_tr(lang, 'I need an agent-friendly asset', '我需要 agent-friendly 资产'), '<code>build_agent_context</code> / <code>build_task_context</code> / <code>build_api_reference</code>', '<code>agent_context_pack</code>'],
         [_tr(lang, 'I need publishable docs and examples', '我需要可发布的文档和案例'), '<code>generate_docs_site</code> / <code>build_api_reference</code>', '<code>docs_site_generation</code>'],
-        [_tr(lang, 'I want real public-data case studies with traffic value', '我想做有传播价值的公共真实数据案例'), '<code>fetch_github_stars_series</code> / <code>fetch_coingecko_market_chart</code> / <code>pairwise_similarity</code>', '<code>openclaw_stars_similarity</code>'],
+        [_tr(lang, 'I want public-data case studies', '我想做公共数据案例'), '<code>fetch_github_stars_series</code> / <code>fetch_coingecko_market_chart</code> / <code>pairwise_similarity</code>', '<code>openclaw_stars_similarity</code>'],
     ]
     body += f"<div class='section' id='api-map'><div class='kicker'>API map</div><h2>{escape(_tr(lang, 'Start from intent, not from modules', '从意图进入，而不是从模块猜'))}</h2>{_table([_tr(lang, 'What you want to do', '你要做什么'), _tr(lang, 'Start with APIs', '先看哪些 API'), _tr(lang, 'Start with example', '先看哪个案例')], workflow_rows)}</div>"
     body += f"<div class='section' id='examples'><div class='grid'>" + _card(_tr(lang, 'Open these examples first', '建议先打开的案例'), _example_cards(featured_examples, lang=lang)) + _card(_tr(lang, 'Follow these tutorial tracks', '建议先走的教程路径'), _tutorial_cards(featured_tutorials, lang=lang)) + "</div></div>"
-    body += f"<div class='section' id='hot-now'><div class='kicker'>Hot now</div><h2>{escape(_tr(lang, 'Traffic-friendly public-data case studies', '适合扩散的公共数据案例'))}</h2><p class='muted'>{escape(_tr(lang, 'These examples use public signals that many researchers already care about — GitHub attention, crypto, gold, and oil — so they double as both tutorials and outreach surfaces.', '这些案例使用很多研究者本来就关心的公共信号：GitHub 热度、加密货币、黄金和原油，因此既能教学，也能承担传播入口。'))}</p>{_example_cards(hot_examples, lang=lang)}</div>"
+    body += f"<div class='section' id='hot-now'><div class='kicker'>Public data</div><h2>{escape(_tr(lang, 'Public data examples that are easy to share', '容易分享的公共数据案例'))}</h2><p class='muted'>{escape(_tr(lang, 'These examples use public signals such as GitHub attention, crypto, gold, and oil. They work as both tutorials and demos.', '这些案例使用 GitHub 热度、加密货币、黄金和原油等公共信号，既能教学，也能演示。'))}</p>{_example_cards(hot_examples, lang=lang)}</div>"
     featured_playbooks = recommend_playbooks('first success real data benchmark control agent', top_k=3, language=lang)
     featured_starters = recommend_starters('new user real data benchmark control agent', top_k=3, language=lang)
-    body += f"<div class='section'><div class='grid'>" + _card(_tr(lang, 'Choose a playbook if you care more about the workflow than the modules', '如果你更关心工作流而不是模块名，就先选一个使用剧本'), _playbook_cards(featured_playbooks, lang=lang)) + _card(_tr(lang, 'Download a starter kit if you want a project layout, not just a page of docs', '如果你需要的是项目模板而不只是文档，就下载一个 starter kit'), _starter_cards(featured_starters, lang=lang)) + "</div></div>"
+    body += f"<div class='section'><div class='grid'>" + _card(_tr(lang, 'Choose a workflow if you care more about the goal than the modules', '如果你更关心目标而不是模块名，就先选一条工作流'), _playbook_cards(featured_playbooks, lang=lang)) + _card(_tr(lang, 'Open a starter project if you want a ready project layout', '如果你想直接拿到项目骨架，就先打开起步项目'), _starter_cards(featured_starters, lang=lang)) + "</div></div>"
     body += f"<div class='section'><div class='notice'><strong>{escape(_tr(lang, 'If you only remember one thing', '如果你只记住一件事'))}:</strong> {escape(_tr(lang, 'TSDataForge becomes much easier once you think in this order: understand the data, create or import a reusable asset, derive the task view, then save a self-explaining artifact.', '一旦你按照这个顺序思考，TSDataForge 会简单很多：先理解数据，再创建或导入可复用资产，然后派生任务视图，最后保存自解释资产。'))}</div></div>"
     return _page('TSDataForge Docs', body, lang=lang, slug='index.html')
 
@@ -981,7 +1077,7 @@ def _getting_started_page(lang: str) -> str:
     envs = recommend_environments('notebook script real data first success', top_k=3, language=lang)
     body = _hero(
         _tr(lang, 'Quickstart: understand what the package does, then get the first meaningful success in five minutes', '快速上手：先搞清这个包做什么，再在 5 分钟内跑通第一次有意义的成功'),
-        _tr(lang, 'You do not need to memorize the whole package. Learn what TSDataForge is for, remember the three main data objects, and run one end-to-end path: series or real data → EDA or dataset asset → task view → saved artifact.', '你不需要记住整个包。先理解 TSDataForge 是干什么的，记住三个主要数据对象，然后跑通一条端到端路径：单序列或真实数据 → EDA 或数据资产 → 任务视图 → 保存好的产物。'),
+        _tr(lang, 'Do not start by memorizing modules. Start by generating one report or one handoff bundle and open the saved files in order.', '不要先背模块名。先生成一份报告或一个 handoff bundle，然后按顺序打开产物。'),
         ['load_asset', 'report', 'handoff', 'taskify', 'demo'],
         pills=['copy/paste', 'first success', 'asset-first'],
     )
@@ -994,10 +1090,9 @@ def _getting_started_page(lang: str) -> str:
         ('envs', _tr(lang, 'Good starting environments', '最合适的起步环境')),
         ('pitfalls', _tr(lang, 'Pitfalls', '常见坑')),
     ])
-    body += f"<div class='section' id='flagship'><div class='kicker'>Real public demos</div><h2>{escape(_tr(lang, 'Three real public demos that make the product credible immediately', '三个能立刻建立可信度的真实公开数据案例'))}</h2><div class='grid'>"
-    body += _card(_tr(lang, 'Public ECG arrhythmia handoff', '公开 ECG 心律失常交接 bundle'), "<p>" + escape(_tr(lang, 'Real ECG windows from a public MIT-BIH excerpt bundled with SciPy. Best next step: event or anomaly review.', '来自 SciPy 打包 MIT-BIH 片段的真实 ECG 窗口。最佳下一步：event 或 anomaly 分析。')) + "</p><pre><code>python -m tsdataforge demo --scenario ecg_public --output ecg_bundle</code></pre><p><a href='showcase.html'>" + escape(_tr(lang, 'Open showcase', '打开 showcase')) + "</a></p>")
-    body += _card(_tr(lang, 'Public US macro handoff', '公开美国宏观时间序列交接 bundle'), "<p>" + escape(_tr(lang, 'Real macro windows built from public quarterly data: inflation, unemployment, and T-bill rate. Best next step: regime or forecasting review.', '基于真实公开季度数据构建的宏观窗口：通胀、失业与国库券利率。最佳下一步：regime 或 forecasting 分析。')) + "</p><pre><code>python -m tsdataforge demo --scenario macro_public --output macro_public_bundle</code></pre><p><a href='showcase.html'>" + escape(_tr(lang, 'Open showcase', '打开 showcase')) + "</a></p>")
-    body += _card(_tr(lang, 'Public climate CO₂ handoff', '公开气候 CO₂ 时间序列交接 bundle'), "<p>" + escape(_tr(lang, 'Real weekly atmospheric CO₂ observations with trend, seasonality, and missingness. Best next step: forecasting or missingness review.', '真实周度大气 CO₂ 观测，带趋势、周期和缺失。最佳下一步：forecasting 或 missingness 分析。')) + "</p><pre><code>python -m tsdataforge demo --scenario climate_public --output climate_bundle</code></pre><p><a href='showcase.html'>" + escape(_tr(lang, 'Open showcase', '打开 showcase')) + "</a></p>")
+    body += f"<div class='section' id='flagship'><div class='kicker'>Real public demos</div><h2>{escape(_tr(lang, 'If you want a concrete starting point, open one of these demos', '如果你想马上看到真实效果，就先打开这几个案例'))}</h2><div class='grid'>"
+    for spec in [item for item in _showcase_specs(lang) if item["group"] == "public"][:3]:
+        body += _showcase_card(spec, lang=lang, include_showcase_link=True)
     body += '</div></div>'
     body += f"<div class='section' id='what'><div class='grid'>"
     body += _card(_tr(lang, 'The one-sentence answer', '一句话回答'), '<p>' + escape(_tr(lang, 'TSDataForge helps you define time-series structure, describe real data, convert sequence assets into tasks, and save everything in a form that is easier to explain, share, and automate.', 'TSDataForge 帮你定义时间序列结构、描述真实数据、把序列资产转成任务，并把这一切保存成更容易解释、分享和自动化消费的形式。')) + '</p>')
@@ -1128,59 +1223,50 @@ def _handoff_page(lang: str) -> str:
 
 def _showcase_page(lang: str) -> str:
     body = _hero(
-        _tr(lang, "Showcase: real public data demos that make the product credible", "Showcase：用真实公开数据让产品立刻建立可信度"),
-        _tr(lang, "These demos answer the skeptical question immediately: can TSDataForge say something useful about a real time-series asset right now? Each one starts from a public dataset and turns it into a report, dataset card, compact context, and next-step route.", "这些案例专门回答那个最关键的怀疑问题：TSDataForge 能不能立刻对真实时间序列资产说出有用的话？每个案例都从公开数据出发，把它变成 report、dataset card、compact context 和 next-step route。"),
+        _tr(lang, "Showcase: open the finished bundle, not just the command", "案例展示：不仅给命令，也直接给完整 bundle"),
+        _tr(lang, "Each demo below links to the saved report, dataset card, and handoff index so you can inspect the full output directly.", "下面每个案例都直接链接到保存好的报告、数据卡和 handoff 索引，可以直接看完整输出。"),
         ["real-public-data", "report-first", "shareable"],
-        pills=["medicine", "economics", "climate"],
+        pills=["report", "card", "handoff index"],
     )
     body += _toc([
-        ("ecg", _tr(lang, "Public ECG arrhythmia", "公开 ECG 心律失常")),
-        ("macro", _tr(lang, "Public US macro", "公开美国宏观")),
-        ("climate", _tr(lang, "Public climate CO₂", "公开气候 CO₂")),
-        ("synthetic", _tr(lang, "Reality-shaped synthetic", "现实风格合成案例")),
+        ("how", _tr(lang, "How to read a showcase bundle", "怎么阅读一个 showcase bundle")),
+        ("public", _tr(lang, "Real public-data demos", "真实公开数据案例")),
+        ("synthetic", _tr(lang, "Synthetic demos", "合成案例")),
     ])
-    cards = [
-        (
-            "ecg",
-            _tr(lang, "Public ECG arrhythmia handoff", "公开 ECG 心律失常交接 bundle"),
-            _tr(lang, "Real ECG windows from a public MIT-BIH excerpt bundled with SciPy. Best next step: event or anomaly review.", "来自 SciPy 打包 MIT-BIH 片段的真实 ECG 窗口。最佳下一步：event 或 anomaly 分析。"),
-            "python -m tsdataforge demo --scenario ecg_public --output ecg_bundle",
-        ),
-        (
-            "macro",
-            _tr(lang, "Public US macro handoff", "公开美国宏观时间序列交接 bundle"),
-            _tr(lang, "Real macro windows built from public quarterly data: inflation, unemployment, and T-bill rate. Best next step: regime or forecasting review.", "基于真实公开季度数据构建的宏观窗口：通胀、失业与国库券利率。最佳下一步：regime 或 forecasting 分析。"),
-            "python -m tsdataforge demo --scenario macro_public --output macro_public_bundle",
-        ),
-        (
-            "climate",
-            _tr(lang, "Public climate CO₂ handoff", "公开气候 CO₂ 时间序列交接 bundle"),
-            _tr(lang, "Real weekly atmospheric CO₂ observations with trend, seasonality, and missingness. Best next step: forecasting or missingness review.", "真实周度大气 CO₂ 观测，带趋势、周期和缺失。最佳下一步：forecasting 或 missingness 分析。"),
-            "python -m tsdataforge demo --scenario climate_public --output climate_bundle",
-        ),
-        (
-            "synthetic",
-            _tr(lang, "Reality-shaped synthetic demos", "现实风格合成案例"),
-            _tr(lang, "The synthetic ICU, macro, and factory demos still exist. Use them when you need deterministic showcase assets without shipping external raw data.", "ICU、macro 和 factory 的合成 demo 仍然保留。当你需要可控、可重复、又不想附带外部原始数据时就用它们。"),
-            "python -m tsdataforge demo --scenario ecg_public --output ecg_bundle",
-        ),
-    ]
-    for section_id, title, summary, command in cards:
-        body += f"<div class='section' id='{escape(section_id)}'>" + _card(title, f"<p>{escape(summary)}</p><pre><code>{escape(command)}</code></pre><p class='small'>{escape(_tr(lang, 'Open the report first. Then use handoff_index_min.json to choose the next step.', '先打开 report，再用 handoff_index_min.json 选择下一步。'))}</p>") + "</div>"
+    body += f"<div class='section' id='how'><div class='grid'>"
+    body += _card(_tr(lang, 'Open files in this order', '建议打开顺序'), _bullets([
+        _tr(lang, '1. report.html', '1. report.html'),
+        _tr(lang, '2. dataset_card.md', '2. dataset_card.md'),
+        _tr(lang, '3. handoff_index_min.json', '3. handoff_index_min.json'),
+    ]))
+    body += _card(_tr(lang, 'What this page proves', '这页证明什么'), _bullets([
+        _tr(lang, 'The package can say something useful about real time-series data.', '这个包能对真实时序数据给出有用的解释。'),
+        _tr(lang, 'The saved bundle is readable by both humans and agents.', '保存下来的 bundle 同时适合人和 agent。'),
+        _tr(lang, 'The next step is explicit instead of hidden in a notebook.', '下一步是显式写出来的，不是藏在 notebook 里。'),
+    ]))
+    body += "</div></div>"
+    body += f"<div class='section' id='public'><div class='kicker'>Real public data</div><h2>{escape(_tr(lang, 'Real public-data demos', '真实公开数据案例'))}</h2><div class='grid'>"
+    for spec in [item for item in _showcase_specs(lang) if item["group"] == "public"]:
+        body += f"<div id='{escape(spec['section_id'])}'>{_showcase_card(spec, lang=lang)}</div>"
+    body += "</div></div>"
+    body += f"<div class='section' id='synthetic'><div class='kicker'>Synthetic</div><h2>{escape(_tr(lang, 'Synthetic demos for deterministic testing and screenshots', '适合稳定测试和截图的合成案例'))}</h2><div class='grid'>"
+    for spec in [item for item in _showcase_specs(lang) if item["group"] == "synthetic"]:
+        body += f"<div id='{escape(spec['section_id'])}'>{_showcase_card(spec, lang=lang)}</div>"
+    body += "</div></div>"
     return _page('TSDataForge Showcase', body, lang=lang, slug='showcase.html')
 
 
 def _tutorials_page(lang: str) -> str:
     tutorials = tutorial_catalog(language=lang)
     body = _hero(
-        _tr(lang, "Tutorials: the layer that makes a research library adoptable", "教程：让研究型库真正可采用的那一层"),
-        _tr(lang, "A globally useful package needs more than a feature list. It needs guided paths for first success, real-data understanding, multi-task reuse, control/causal workflows, and agent integration.", "一个对全球研究者有用的包，不只需要功能列表，还需要围绕第一次成功、真实数据理解、多任务复用、控制/因果工作流和 agent 接入的引导路径。"),
+        _tr(lang, "Tutorials: guided paths from first result to repeatable workflow", "教程：从第一次成功走到可复用工作流"),
+        _tr(lang, "Use these pages when the API list is too low-level and you want a short path for a concrete goal.", "当 API 列表对你来说太底层时，就看这里；这里给的是面向具体目标的短路径。"),
         [f"{len(tutorials)} tracks", "example-backed", "beginner to advanced"],
-        pills=["teaching", "adoption", "repeat usage"],
+        pills=["first result", "real data", "repeat usage"],
     )
     body += _toc([(item.tutorial_id, item.title if not lang.startswith('zh') else (item.title_zh or item.title)) for item in tutorials])
-    body += f"<div class='section'>" + _card(_tr(lang, 'Why tutorials matter', '为什么教程比功能表更重要'), "<p>" + escape(_tr(lang, "Tutorials are the highest-leverage public asset after the core API. They shorten time-to-success, reduce support load, and create a shared vocabulary across global users.", "在核心 API 之外，教程是杠杆最高的公共资产。它们缩短成功时间、降低支持负担，并为全球用户建立共同语言。")) + "</p>") + "</div>"
-    body += f"<div class='section'><div class='tip'><strong>{escape(_tr(lang, 'Prefer the shortest outcome-first path?', '想先走最短的 outcome-first 路径？'))}:</strong> <a href='handoff.html'>{escape(_tr(lang, 'Open Handoff', '打开 Handoff'))}</a> · <a href='starter-kits.html'>{escape(_tr(lang, 'Open Starter Kits', '打开 Starter Kits'))}</a> · <a href='notebooks/first-five-minutes.ipynb'><code>first-five-minutes.ipynb</code></a></div></div>"
+    body += f"<div class='section'>" + _card(_tr(lang, 'How to use this page', '怎么用这页'), "<p>" + escape(_tr(lang, "Pick one track, run it end to end, and only then open adjacent API pages.", "先挑一条教程完整跑通，然后再看相邻的 API 页面。")) + "</p>") + "</div>"
+    body += f"<div class='section'><div class='tip'><strong>{escape(_tr(lang, 'Prefer the shortest path?', '想走最短路径？'))}:</strong> <a href='handoff.html'>{escape(_tr(lang, 'Open Handoff', '打开 Handoff'))}</a> · <a href='starter-kits.html'>{escape(_tr(lang, 'Open Starter Projects', '打开起步项目'))}</a> · <a href='notebooks/first-five-minutes.ipynb'><code>first-five-minutes.ipynb</code></a></div></div>"
     for item in tutorials:
         title = item.title if not lang.startswith('zh') else (item.title_zh or item.title)
         summary = item.summary if not lang.startswith('zh') else (item.summary_zh or item.summary)
@@ -1198,13 +1284,13 @@ def _tutorials_page(lang: str) -> str:
 def _playbooks_page(lang: str) -> str:
     items = playbook_catalog(language=lang)
     body = _hero(
-        _tr(lang, "Playbooks: choose a goal-driven workflow instead of guessing from modules", "使用剧本：按目标挑选工作流，而不是从模块名猜"),
-        _tr(lang, "Playbooks are the missing middle layer between a feature list and a runnable starter. They answer: what am I trying to do, what should I run first, and which APIs matter next?", "使用剧本是功能列表和 runnable starter 之间缺失的中间层。它回答：我到底要做什么、第一步应该跑什么、接下来哪些 API 最重要？"),
-        [f"{len(items)} playbooks", "goal-first", "tutorial-backed"],
+        _tr(lang, "Workflows: choose a goal-driven path instead of guessing from modules", "工作流：按目标选路径，而不是从模块名猜"),
+        _tr(lang, "Each workflow maps one user goal to the first examples, the key APIs, and the matching starter project.", "每条工作流都把一个用户目标映射到起步案例、关键 API 和对应的起步项目。"),
+        [f"{len(items)} workflows", "goal-first", "tutorial-backed"],
         pills=["first success", "real data", "benchmark", "control/causal", "agent"],
     )
     body += _toc([(item.playbook_id, item.title) for item in items])
-    body += f"<div class='section'>" + _card(_tr(lang, 'Why playbooks matter', '为什么需要使用剧本'), '<p>' + escape(_tr(lang, 'Most users do not ask for modules. They ask for the next sensible workflow. Playbooks map a real intention to examples, APIs, environments, and a starter project.', '大多数用户不是在问模块名，而是在问“下一条合理工作流是什么”。使用剧本把真实意图映射到案例、API、环境和 starter project。')) + '</p>') + '</div>'
+    body += f"<div class='section'>" + _card(_tr(lang, 'Why workflows matter', '为什么要有工作流页'), '<p>' + escape(_tr(lang, 'Most users ask for the next sensible route, not for a module map. This page answers that question directly.', '大多数用户想知道的是“下一条合理路径是什么”，不是模块分布图。这页就是直接回答这个问题。')) + '</p>') + '</div>'
     body += f"<div class='section'>" + _playbook_cards(items, lang=lang) + '</div>'
     rows = []
     for item in items:
@@ -1215,25 +1301,25 @@ def _playbooks_page(lang: str) -> str:
             '<br/>'.join([f"<code>{escape(api)}</code>" for api in item.api_names[:4]]) or '—',
             f"<a href='starter-kits.html#{escape(item.starter_id)}'><code>{escape(item.starter_id)}</code></a>",
         ])
-    body += f"<div class='section'><h2>{escape(_tr(lang, 'Playbook matrix', '使用剧本矩阵'))}</h2>{_table([_tr(lang, 'Playbook', '剧本'), _tr(lang, 'Use it when', '适合在什么情况下使用'), _tr(lang, 'Best environments', '适合环境'), _tr(lang, 'APIs', 'API'), _tr(lang, 'Starter', 'Starter')], rows)}</div>"
-    return _page('TSDataForge Playbooks', body, lang=lang, slug='playbooks.html')
+    body += f"<div class='section'><h2>{escape(_tr(lang, 'Workflow matrix', '工作流矩阵'))}</h2>{_table([_tr(lang, 'Workflow', '工作流'), _tr(lang, 'Use it when', '适合在什么情况下使用'), _tr(lang, 'Best environments', '适合环境'), _tr(lang, 'APIs', 'API'), _tr(lang, 'Starter', 'Starter')], rows)}</div>"
+    return _page('TSDataForge Workflows', body, lang=lang, slug='playbooks.html')
 
 
 
 def _starter_kits_page(lang: str) -> str:
     items = starter_catalog(language=lang)
     body = _hero(
-        _tr(lang, "Starter kits: downloadable project templates that lower time-to-success", "Starter kits：降低成功时间的可下载项目模板"),
-        _tr(lang, "A strong research package should not stop at documentation. It should hand users a project layout, scripts, and notebooks that already point in the right direction.", "一个强的研究型包不应该停在文档层面，而应该直接给用户一个已经对准方向的项目布局、scripts 和 notebooks。"),
+        _tr(lang, "Starter Projects: ready project layouts for the common paths", "起步项目：常见路径的现成项目骨架"),
+        _tr(lang, "Use a starter project when you want files and structure, not just a page of documentation.", "如果你需要的是文件结构和项目骨架，而不只是文档页，就用起步项目。"),
         [f"{len(items)} starters", "project templates", "downloadable"],
         pills=["README", "scripts", "notebooks", "manifest"],
     )
     body += _toc([(item.starter_id, item.title) for item in items])
-    body += f"<div class='section'>" + _card(_tr(lang, 'What a starter kit gives you', 'Starter kit 会给你什么'), _bullets([
-        _tr(lang, 'A small README that explains the intent of the starter.', '一份小而清楚的 README，解释 starter 的意图。'),
-        _tr(lang, 'Runnable scripts built from tested examples.', '由已测试案例生成的可运行 scripts。'),
-        _tr(lang, 'Notebook versions of the main tutorial tracks.', '主要 tutorial 路径对应的 notebook 版本。'),
-        _tr(lang, 'A manifest that tells a collaborator or an agent what this starter contains.', '一份 manifest，让协作者或 agent 立即知道 starter 里有什么。'),
+    body += f"<div class='section'>" + _card(_tr(lang, 'What a starter project gives you', '起步项目会给你什么'), _bullets([
+        _tr(lang, 'A small README that explains the goal of the project.', '一份短 README，解释这个项目要解决什么。'),
+        _tr(lang, 'Runnable scripts built from tested examples.', '由已测试案例导出的可运行脚本。'),
+        _tr(lang, 'Notebook versions of the main tutorial tracks.', '主要教程路径对应的 notebook。'),
+        _tr(lang, 'A manifest that tells a collaborator or an agent what the project contains.', '一份 manifest，让协作者或 agent 立刻知道项目里有什么。'),
     ])) + '</div>'
     body += f"<div class='section'>" + _starter_cards(items, lang=lang) + '</div>'
     for item in items:
@@ -1242,7 +1328,7 @@ def _starter_kits_page(lang: str) -> str:
         notebook_links = ''.join([f"<li><a href='notebooks/{escape(tid)}.ipynb'><code>{escape(tid)}.ipynb</code></a> · <a href='notebooks/{escape(tid)}.py'><code>{escape(tid)}.py</code></a></li>" for tid in item.tutorial_ids])
         body += _card(_tr(lang, 'Included notebook downloads', '可下载 notebook'), f"<ul>{notebook_links}</ul><p class='small'>{escape(_tr(lang, 'These notebooks are generated from tutorial tracks and backed by tested example code.', '这些 notebooks 是从 tutorial 路径自动生成的，并且以已测试的示例代码为基础。'))}</p>")
         body += "</div></div>"
-    return _page('TSDataForge Starter Kits', body, lang=lang, slug='starter-kits.html')
+    return _page('TSDataForge Starter Projects', body, lang=lang, slug='starter-kits.html')
 
 
 def _cookbook_page(lang: str, grouped: dict[str, list[ExampleRecipe]]) -> str:
@@ -1378,10 +1464,10 @@ def _use_cases_page(lang: str) -> str:
 
 def _rollout_page(lang: str) -> str:
     body = _hero(
-        _tr(lang, "Adoption and scale: how to absorb global attention once it arrives", "扩散与承载：当全球流量真的来时，怎么接住"),
+        _tr(lang, "Release: what the public surface still needs", "发布：公开面还缺什么"),
         _tr(lang, "Once the feature surface is coherent, growth depends on information architecture, examples, linked reports, FAQs, and self-explaining assets more than on adding yet another generator.", "当功能表面已经合理后，增长更依赖信息架构、案例、联动报告、FAQ 和自解释资产，而不是再多加一个生成器。"),
         ["launch", "docs", "support", "community", "distribution"],
-        pills=["global users", "bilingual", "low-friction"],
+        pills=["bilingual", "low-friction", "shareable"],
     )
     body += _toc([
         ("stack", _tr(lang, "The minimum public stack", "最小公开栈")),
@@ -1390,7 +1476,7 @@ def _rollout_page(lang: str) -> str:
         ("checklist", _tr(lang, "Release checklist", "发布清单")),
     ])
     body += f"<div class='section' id='stack'><div class='grid'>"
-    body += _card(_tr(lang, 'Minimum global-facing stack', '面向全球用户的最小公开栈'), _bullets([
+    body += _card(_tr(lang, 'Minimum public stack', '最小公开栈'), _bullets([
         _tr(lang, "A bilingual landing page with a clear first step.", "双语 landing 页，并且明确第一步。"),
         _tr(lang, "A five-minute quickstart and several tutorial tracks.", "5 分钟 quickstart 和几条教程路径。"),
         _tr(lang, "25+ runnable examples grouped by intent.", "按目标分层的 25+ runnable examples。"),
@@ -1398,8 +1484,8 @@ def _rollout_page(lang: str) -> str:
         _tr(lang, "Saved artifacts that travel with cards, schema, and context.", "保存资产时自带 card、schema 和 context。"),
     ]))
     body += _card(_tr(lang, 'Why bilingual matters', '为什么双语重要'), _bullets([
-        _tr(lang, "English is the default discovery language for global research audiences.", "英文是全球研究社区的默认发现语言。"),
-        _tr(lang, "A Chinese switch helps local communities teach, onboard, and collaborate more easily.", "中文切换能帮助本地社区更容易教学、onboard 和协作。"),
+        _tr(lang, "English should be the default public surface for discovery and search.", "英文应该是默认的公开发现语言和搜索入口。"),
+        _tr(lang, "A Chinese switch helps local teaching, onboarding, and collaboration.", "中文切换能帮助本地教学、onboarding 和协作。"),
         _tr(lang, "The key is one surface, not two disconnected documentation universes.", "关键是一套统一表层，而不是两个彼此割裂的文档宇宙。"),
     ]))
     body += "</div></div>"
@@ -1498,12 +1584,13 @@ def generate_docs_site(output_dir: str | Path, *, title: str = "TSDataForge Docs
     api_dir = out / "api"
     notebooks_dir = out / "notebooks"
     starters_dir = out / "starters"
+    showcase_dir = out / "showcase-bundles"
     zh_dir = out / "zh"
     zh_examples_dir = zh_dir / "examples"
     zh_api_dir = zh_dir / "api"
     zh_notebooks_dir = zh_dir / "notebooks"
     zh_starters_dir = zh_dir / "starters"
-    for d in (examples_dir, api_dir, notebooks_dir, starters_dir, zh_examples_dir, zh_api_dir, zh_notebooks_dir, zh_starters_dir):
+    for d in (examples_dir, api_dir, notebooks_dir, starters_dir, showcase_dir, zh_examples_dir, zh_api_dir, zh_notebooks_dir, zh_starters_dir):
         d.mkdir(parents=True, exist_ok=True)
 
     result = DocsSiteResult(output_dir=str(out))
@@ -1753,6 +1840,31 @@ def generate_docs_site(output_dir: str | Path, *, title: str = "TSDataForge Docs
             "summary": item.summary,
             "path": f"zh/starters/{item.starter_id}/README.md",
             "keywords": [*item.best_for, *item.api_names, *item.environment_ids],
+        })
+    from ..surface import demo as build_demo_bundle
+
+    for spec in _showcase_specs("en"):
+        bundle_dir = showcase_dir / spec["scenario"]
+        bundle = build_demo_bundle(output_dir=bundle_dir, scenario=spec["scenario"])
+        result.showcase_bundles.append(str(bundle.output_dir))
+        search_items.append({
+            "kind": "showcase",
+            "lang": "en",
+            "id": spec["scenario"],
+            "title": spec["title"],
+            "summary": spec["summary"],
+            "path": f"showcase.html#{spec['section_id']}",
+            "keywords": [spec["scenario"], "showcase", "report", "handoff"],
+        })
+    for spec in _showcase_specs("zh"):
+        search_items.append({
+            "kind": "showcase",
+            "lang": "zh",
+            "id": spec["scenario"],
+            "title": spec["title"],
+            "summary": spec["summary"],
+            "path": f"zh/showcase.html#{spec['section_id']}",
+            "keywords": [spec["scenario"], "showcase", "report", "handoff"],
         })
     for item in playbook_catalog(language="en"):
         search_items.append({

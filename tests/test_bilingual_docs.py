@@ -25,6 +25,7 @@ def test_docs_site_has_english_root_and_chinese_mirror(tmp_path: Path):
     assert "Quickstart" in index
     assert "中文" in index
     assert "English" in zh_index
+    assert "href='../index.html'" in zh_index
     assert (tmp_path / "site" / "tutorials.html").exists()
     assert (tmp_path / "site" / "use-cases.html").exists()
     assert (tmp_path / "site" / "zh" / "tutorials.html").exists()
