@@ -120,6 +120,22 @@ pip install ".[viz]"
 python -m tsdataforge demo --scenario ecg_public --output demo_bundle
 ```
 
+### Local GUI
+
+If you want the package to feel like a product instead of a CLI, start the local GUI:
+
+```bash
+pip install ".[viz]"
+python -m tsdataforge ui
+```
+
+Then open `http://127.0.0.1:8765/`, drag in one `.npy/.npz/.csv/.txt/.json` file, and let the GUI produce:
+
+- `report.html`
+- `dataset_card.md`
+- `dataset_context.json`
+- `handoff_index_min.json`
+
 Open these files in this order.
 
 ### Human open order

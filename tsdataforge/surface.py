@@ -219,6 +219,18 @@ def demo(
     return bundle
 
 
+def launch_gui(
+    *,
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    output_root: str | Path = ".bundle/gui_runs",
+    open_browser: bool = True,
+):
+    from .gui import launch_gui as _launch_gui
+
+    return _launch_gui(host=host, port=port, output_root=output_root, open_browser=open_browser)
+
+
 __all__ = [
     "PublicEntrypoint",
     "PublicSurface",
@@ -230,4 +242,5 @@ __all__ = [
     "handoff",
     "taskify",
     "demo",
+    "launch_gui",
 ]

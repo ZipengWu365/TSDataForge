@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .surface import demo as demo_bundle
 from .surface import handoff as handoff_bundle
+from .surface import launch_gui
 from .surface import report as report_asset
 
 
@@ -65,6 +66,16 @@ def _cmd_demo(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_ui(args: argparse.Namespace) -> int:
+    launch_gui(
+        host=args.host,
+        port=int(args.port),
+        output_root=args.output_root,
+        open_browser=not args.no_browser,
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tsdataforge",
@@ -96,6 +107,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_handoff.add_argument("--no-report", action="store_true", help="Skip report.html and only build cards/context/manifest.")
     p_handoff.add_argument("--no-schemas", action="store_true", help="Skip JSON Schema files. By default schemas/ is written for agent contracts.")
     p_handoff.set_defaults(func=_cmd_handoff)
+
+    p_ui = sub.add_parser("ui", help="Launch a local GUI for drag-and-drop report + handoff generation.")
+    p_ui.add_argument("--host", default="127.0.0.1", help="Host interface to bind. Default is loopback only.")
+    p_ui.add_argument("--port", type=int, default=8765, help="Port for the local GUI server.")
+    p_ui.add_argument("--output-root", default=".bundle/gui_runs", help="Directory where GUI runs are written.")
+    p_ui.add_argument("--no-browser", action="store_true", help="Do not auto-open the browser.")
+    p_ui.set_defaults(func=_cmd_ui)
 
     return parser
 

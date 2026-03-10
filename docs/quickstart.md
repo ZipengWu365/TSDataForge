@@ -20,6 +20,22 @@ Then open:
 3. `demo_bundle/dataset_context.json`
 4. `demo_bundle/handoff_index_min.json`
 
+## Local GUI path
+
+If the user does not want to start from a terminal workflow, launch the local GUI:
+
+```bash
+pip install ".[viz]"
+python -m tsdataforge ui
+```
+
+Then open `http://127.0.0.1:8765/`, drag in a raw file, and inspect the generated:
+
+1. `report.html`
+2. `dataset_card.md`
+3. `dataset_context.json`
+4. `handoff_index_min.json`
+
 ## 5-minute path
 
 ```bash
