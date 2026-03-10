@@ -15,7 +15,7 @@ from ..agent.eda_linking import build_eda_resource_hub, save_eda_resource_hub
 from . import plots
 
 
-VERSION = "0.3.4"
+VERSION = "0.3.7"
 
 
 
@@ -46,6 +46,48 @@ def _tag_badges(tags: list[str]) -> str:
 
 def _metric(label: str, value: str) -> str:
     return f"<div class='metric'><div class='metric-label'>{_escape_html(label)}</div><div class='metric-value'>{_escape_html(value)}</div></div>"
+
+
+def _format_value(value: Any, *, key: str | None = None) -> str:
+    if isinstance(value, (np.floating, float)):
+        number = float(value)
+        if not np.isfinite(number):
+            return "n/a"
+        lower_key = (key or "").lower()
+        if 0.0 <= number <= 1.0 and any(token in lower_key for token in ("rate", "ratio", "spikiness")):
+            return f"{number:.2%}"
+        if abs(number) >= 1000:
+            return f"{number:.4g}"
+        if abs(number) >= 1:
+            return f"{number:.3f}".rstrip("0").rstrip(".")
+        if number == 0:
+            return "0"
+        return f"{number:.3g}"
+    if isinstance(value, (np.integer, int)):
+        return str(int(value))
+    if isinstance(value, (list, tuple)):
+        return ", ".join(_format_value(item) for item in list(value)[:4])
+    return str(value)
+
+
+def _summarize_evidence(evidence: Any) -> str:
+    if isinstance(evidence, dict) and evidence:
+        parts = []
+        for key, value in list(evidence.items())[:4]:
+            label = key.replace("_", " ")
+            parts.append(f"{label}: {_format_value(value, key=key)}")
+        return "; ".join(parts)
+    return _format_value(evidence)
+
+
+def _details_block(title: str, body_html: str, *, open_by_default: bool = False) -> str:
+    open_attr = " open" if open_by_default else ""
+    return (
+        f"<details class='details-block'{open_attr}>"
+        f"<summary>{_escape_html(title)}</summary>"
+        f"<div class='details-body'>{body_html}</div>"
+        "</details>"
+    )
 
 
 
@@ -126,14 +168,18 @@ def _render_trace_card(trace_summary: dict[str, Any]) -> str:
         bullets.append("Potential outcomes and ITE traces are available.")
     if not bullets:
         bullets.append("Trace metadata is available but no control/causal extras were detected.")
+    details = _details_block(
+        "Show trace metadata (JSON)",
+        f"<pre><code>{_escape_html(_json_pretty(trace_summary))}</code></pre>",
+    )
     return (
         "<div class='card'>"
         "<h2>Control / causal trace summary</h2>"
         "<ul>"
         + "".join([f"<li>{_escape_html(b)}</li>" for b in bullets])
         + "</ul>"
-        f"<pre><code>{_escape_html(_json_pretty(trace_summary))}</code></pre>"
-        "</div>"
+        + details
+        + "</div>"
     )
 
 
@@ -172,16 +218,16 @@ def _render_resource_hub_card(resource_hub: Any | None) -> str:
     if getattr(resource_hub, "next_steps", None):
         next_steps_html = "<div class='card'><h2>Next steps</h2><ul>" + ''.join([f"<li>{_escape_html(item)}</li>" for item in resource_hub.next_steps]) + "</ul></div>"
     return (
-        "<div class='card'><h2>Linked docs / examples / API / FAQ</h2><p class='muted'>This report is now a navigation hub. Use the links below to jump from findings to explanations, runnable code, API entry points and support answers.</p></div>"
+        "<div class='card'><h2>Next actions and useful links</h2><p class='muted'>This report can route you from the main findings to docs, runnable examples, API entry points, and FAQ answers.</p></div>"
         + task_items
         + routes_html
+        + next_steps_html
         + "<div class='link-grid'>"
         + _resource_links_html("Docs pages", getattr(resource_hub, "page_links", []))
         + _resource_links_html("Examples", getattr(resource_hub, "example_links", []))
         + _resource_links_html("API entry points", getattr(resource_hub, "api_links", []))
         + _resource_links_html("FAQ matches", getattr(resource_hub, "faq_links", []))
         + "</div>"
-        + next_steps_html
     )
 
 
@@ -265,15 +311,18 @@ def _render_series_report(
     if include_spec:
         try:
             spec = suggest_spec(desc)
-            spec_block = (
-                "<h3>Suggested executable spec (seed)</h3>"
-                "<p class='muted'>This is a coarse, explainable seed derived from the description. Use it to create matching synthetic controls or benchmark suites.</p>"
-                f"<pre><code>{_escape_html(_json_pretty(spec.to_dict()))}</code></pre>"
+            spec_block = _details_block(
+                "Suggested synthetic seed",
+                (
+                    "<p class='muted'>This is a coarse, explainable seed derived from the report. "
+                    "Use it when you need a matching synthetic control or a benchmark starter.</p>"
+                    f"<pre><code>{_escape_html(_json_pretty(spec.to_dict()))}</code></pre>"
+                ),
             )
         except Exception as e:  # pragma: no cover
-            spec_block = (
-                "<h3>Suggested executable spec (seed)</h3>"
-                f"<p class='warn'>Failed to suggest spec: {_escape_html(str(e))}</p>"
+            spec_block = _details_block(
+                "Suggested synthetic seed",
+                f"<p class='warn'>Failed to suggest spec: {_escape_html(str(e))}</p>",
             )
 
     metric_items = [
@@ -292,24 +341,29 @@ def _render_series_report(
             metric_items.append(_metric("Interventions", str(len(trace_summary["intervention_keys"]))))
     metrics_html = "".join(metric_items)
 
-    evidence_rows = []
+    insight_cards = []
     for tag, msg in expl.tag_explanations.items():
         ev = expl.evidence.get(tag, {})
-        evidence_rows.append(
-            "<tr>"
-            f"<td><span class='badge'>{_escape_html(tag)}</span></td>"
-            f"<td>{_escape_html(msg)}</td>"
-            f"<td><pre class='mini'><code>{_escape_html(_json_pretty(ev))}</code></pre></td>"
-            "</tr>"
+        summary = _summarize_evidence(ev) if ev else "No structured metrics captured."
+        metrics_block = f"<p class='small'><strong>Metrics:</strong> {_escape_html(summary)}</p>"
+        details_block = ""
+        if ev:
+            details_block = _details_block(
+                "Show raw metrics",
+                f"<pre><code>{_escape_html(_json_pretty(ev))}</code></pre>",
+            )
+        insight_cards.append(
+            "<div class='insight-card'>"
+            f"<div class='tags'><span class='badge'>{_escape_html(tag)}</span></div>"
+            f"<p>{_escape_html(msg)}</p>"
+            + metrics_block
+            + details_block
+            + "</div>"
         )
-    evidence_html = (
-        "<table class='table'>"
-        "<thead><tr><th>Tag</th><th>Explanation</th><th>Evidence</th></tr></thead>"
-        "<tbody>"
-        + "".join(evidence_rows)
-        + "</tbody></table>"
-        if evidence_rows
-        else "<p class='muted'>No tag-level evidence available.</p>"
+    insights_html = (
+        "<div class='insight-grid'>" + "".join(insight_cards) + "</div>"
+        if insight_cards
+        else "<p class='muted'>No structure-specific notes are available for this series.</p>"
     )
 
     plot_error_html = ""
@@ -319,27 +373,43 @@ def _render_series_report(
         )
 
     trace_card = _render_trace_card(trace_summary or {})
+    appendix_blocks = [
+        _details_block(
+            "Raw series description (JSON)",
+            f"<pre><code>{_escape_html(_json_pretty(desc.to_dict()))}</code></pre>",
+        ),
+        _details_block(
+            "Explanation payload (JSON)",
+            f"<pre><code>{_escape_html(_json_pretty(expl.to_dict()))}</code></pre>",
+        ),
+    ]
+    if spec_block:
+        appendix_blocks.append(spec_block)
     html = f"""
     <div class='container'>
-      <h1>{_escape_html(title)}</h1>
-      <p class='subtitle'>{_escape_html(expl.headline)}</p>
-
-      <div class='card'>
-        <h2>Quick facts</h2>
-        <div class='metrics'>{metrics_html}</div>
+      <div class='hero'>
+        <div class='eyebrow'>Human-readable report</div>
+        <h1>{_escape_html(title)}</h1>
+        <p class='subtitle'>{_escape_html(expl.headline)}</p>
         <div class='tags'>{_tag_badges(desc.inferred_tags)}</div>
       </div>
 
       <div class='card'>
-        <h2>Interpretation</h2>
+        <h2>Quick facts</h2>
+        <div class='metrics'>{metrics_html}</div>
+      </div>
+
+      <div class='card'>
+        <h2>What stands out</h2>
         <ul>
           {''.join([f"<li>{_escape_html(b)}</li>" for b in expl.bullets])}
         </ul>
       </div>
 
       <div class='card'>
-        <h2>Structure tags: explanations & evidence</h2>
-        {evidence_html}
+        <h2>What the structure suggests</h2>
+        <p class='muted'>Use these notes to decide whether the series looks stable, seasonal, bursty, irregular, or worth routing into a specific task.</p>
+        {insights_html}
       </div>
 
       {trace_card}
@@ -355,12 +425,9 @@ def _render_series_report(
       </div>
 
       <div class='card'>
-        <h2>Raw description</h2>
-        <pre><code>{_escape_html(_json_pretty(desc.to_dict()))}</code></pre>
-      </div>
-
-      <div class='card'>
-        {spec_block}
+        <h2>Technical appendix</h2>
+        <p class='muted'>These structured details are useful for debugging, reproducibility, or agent handoff. They are kept out of the main reading flow on purpose.</p>
+        {''.join(appendix_blocks)}
       </div>
 
       <div class='footer'>Generated by tsdataforge.report (v{VERSION}). Pure numpy/scipy analysis; plots via matplotlib when available.</div>
@@ -437,11 +504,18 @@ def _render_dataset_report(
             _metric("dt CV (median)", f"{ddesc.dt_cv_stats.get('median', float('nan')):.3f}"),
         ]
     )
+    appendix_html = _details_block(
+        "Raw dataset description (JSON)",
+        f"<pre><code>{_escape_html(_json_pretty(ddesc.to_dict()))}</code></pre>",
+    )
 
     html = f"""
     <div class='container'>
-      <h1>{_escape_html(title)}</h1>
-      <p class='subtitle'>Dataset-level EDA: structure tags, sampling/missingness, and coverage.</p>
+      <div class='hero'>
+        <div class='eyebrow'>Human-readable report</div>
+        <h1>{_escape_html(title)}</h1>
+        <p class='subtitle'>Dataset-level EDA focused on structure, sampling quality, coverage, and sensible next steps.</p>
+      </div>
 
       <div class='card'>
         <h2>Quick facts</h2>
@@ -466,8 +540,9 @@ def _render_dataset_report(
       </div>
 
       <div class='card'>
-        <h2>Raw dataset description</h2>
-        <pre><code>{_escape_html(_json_pretty(ddesc.to_dict()))}</code></pre>
+        <h2>Technical appendix</h2>
+        <p class='muted'>Structured payloads are kept here so the main report stays readable.</p>
+        {appendix_html}
       </div>
 
       <div class='footer'>Generated by tsdataforge.report (v{VERSION}).</div>
@@ -477,32 +552,50 @@ def _render_dataset_report(
 
 
 _CSS = """
-body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b0f16;color:#e7eefb;margin:0;padding:0;}
-.container{max-width:1050px;margin:0 auto;padding:28px 18px 40px 18px;}
-h1{font-size:28px;margin:0 0 8px 0;}
-.subtitle{margin:0 0 18px 0;color:#b7c4dd;}
-.card{background:#111827;border:1px solid #1f2a44;border-radius:14px;padding:16px 16px;margin:12px 0;box-shadow:0 6px 20px rgba(0,0,0,.25);} 
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0 6px 0;}
-.metric{background:#0b1220;border:1px solid #1f2a44;border-radius:12px;padding:10px 12px;}
-.metric-label{font-size:12px;color:#a9b8d4;margin-bottom:4px;}
-.metric-value{font-size:18px;font-weight:650;}
-.tags{margin-top:10px;}
-.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#1d4ed8;color:#eaf2ff;font-size:12px;margin:3px 6px 0 0;}
-.badge-muted{background:#334155;}
-.plot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}
-.plot img{width:100%;border-radius:10px;border:1px solid #1f2a44;background:#0b1220;}
-pre{background:#0b1220;border:1px solid #1f2a44;border-radius:12px;padding:12px;overflow:auto;}
-code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;color:#e7eefb;}
-.table{width:100%;border-collapse:collapse;margin-top:10px;}
-.table th,.table td{border-bottom:1px solid #1f2a44;padding:10px 8px;vertical-align:top;}
-.table th{color:#b7c4dd;text-align:left;font-weight:600;}
-.mini{max-width:360px;}
-.warn{background:#3b2f1f;border:1px solid #a16207;border-radius:12px;padding:10px 12px;color:#ffedd5;}
-.muted{color:#b7c4dd;}
-.footer{margin-top:18px;color:#9aa9c5;font-size:12px;text-align:center;}
-.link-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
-.link-list{padding-left:18px;}
+:root{--bg:#ffffff;--bg-muted:#f5f7fa;--panel:#ffffff;--panel-muted:#f8fafc;--text:#16202a;--muted:#5c6775;--accent:#f89939;--accent-soft:#fff3e5;--link:#1f5fbf;--border:#d9dee5;--border-strong:#c7cfd9;--shadow:0 6px 18px rgba(15,23,42,.06);--code-bg:#f7f8fa;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+.container{max-width:1120px;margin:0 auto;padding:28px 18px 48px;}
+.hero{border:1px solid var(--border);border-radius:10px;padding:24px 24px 20px;background:var(--panel-muted);box-shadow:var(--shadow);margin-bottom:14px;}
+.eyebrow{color:var(--muted);text-transform:uppercase;font-weight:700;font-size:12px;letter-spacing:.08em;margin-bottom:8px;}
+h1{font-size:34px;line-height:1.14;margin:0 0 8px;}
+h2{font-size:26px;line-height:1.2;margin:0 0 10px;}
+h3{font-size:19px;line-height:1.3;margin:0 0 8px;}
+.subtitle{margin:0;color:var(--muted);font-size:17px;max-width:840px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;margin:14px 0;box-shadow:var(--shadow);}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:12px;}
+.metric{background:var(--panel-muted);border:1px solid var(--border);border-radius:10px;padding:12px 13px;}
+.metric-label{font-size:12px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
+.metric-value{font-size:20px;font-weight:700;color:var(--text);}
+.tags{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:var(--accent-soft);border:1px solid #f0c18c;color:#8a4d00;font-size:12px;}
+.badge-muted{background:var(--panel-muted);border-color:var(--border);color:var(--muted);}
+.insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px;}
+.insight-card{background:var(--panel-muted);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.plot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+.plot img{width:100%;border-radius:10px;border:1px solid var(--border);background:var(--panel);}
+.table{width:100%;border-collapse:collapse;margin-top:10px;border:1px solid var(--border);}
+.table th,.table td{border-bottom:1px solid var(--border);padding:11px 10px;vertical-align:top;text-align:left;}
+.table th{background:var(--panel-muted);font-weight:700;color:var(--text);}
+.link-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;}
+.link-list{padding-left:18px;margin:10px 0 0;}
 .link-list li{margin-bottom:10px;}
+a{color:var(--link);text-decoration:none;}
+a:hover{text-decoration:underline;}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:14px;overflow:auto;color:#0f172a;}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:rgba(15,23,42,.04);border-radius:4px;padding:0 4px;color:#0f172a;}
+pre code{background:transparent;padding:0;}
+.details-block{margin-top:12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);}
+.details-block summary{cursor:pointer;padding:12px 14px;font-weight:700;color:var(--text);}
+.details-body{padding:0 14px 14px;}
+.warn{background:#fff7e8;border:1px solid #f0c18c;border-radius:10px;padding:10px 12px;color:#8a4d00;}
+.muted,.small{color:var(--muted);}
+.small{font-size:13px;}
+strong{color:var(--text);}
+.footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center;}
+ul{padding-left:22px;}
+li{margin-bottom:8px;}
+@media (max-width:720px){.container{padding:18px 14px 40px;}.hero{padding:20px;}.hero h1,h1{font-size:29px;}}
 """
 
 
@@ -666,6 +759,150 @@ def generate_linked_eda_bundle(
         encoding="utf-8",
     )
     return {"report": str(out / "report.html"), "docs_index": str(docs_dir / "index.html"), "bundle_manifest": str(out / "bundle_manifest.json")}
+
+
+def generate_linked_dataset_eda_bundle(
+    values: Any,
+    time: Any | None = None,
+    *,
+    output_dir: str | Path = "tsdataforge_dataset_eda_bundle",
+    title: str = "TSDataForge Linked Dataset EDA Report",
+    docs_title: str = "TSDataForge Docs",
+    max_series: int | None = 200,
+    seed: int = 0,
+) -> dict[str, str]:
+    """Generate a shareable dataset-level bundle with report + docs site."""
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    docs_dir = out / "docs"
+    from ..agent.site import generate_docs_site
+
+    site = generate_docs_site(docs_dir, title=docs_title)
+    generate_dataset_eda_report(
+        values,
+        time,
+        title=title,
+        output_path=out / "report.html",
+        max_series=max_series,
+        seed=seed,
+        docs_base_url="docs/",
+        include_linked_resources=True,
+    )
+    manifest = {
+        "report": str(out / "report.html"),
+        "docs_index": str(docs_dir / "index.html"),
+        "docs_site": site.to_dict(),
+    }
+    (out / "bundle_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "README.md").write_text(
+        "# TSDataForge Linked Dataset EDA Bundle\n\n"
+        "- Open `report.html` for the dataset-level report.\n"
+        "- Use links inside the report to jump to `docs/` pages, examples, API, and FAQ.\n"
+        "- Share this whole folder as a portable bundle.\n",
+        encoding="utf-8",
+    )
+    return {
+        "report": str(out / "report.html"),
+        "docs_index": str(docs_dir / "index.html"),
+        "bundle_manifest": str(out / "bundle_manifest.json"),
+    }
+
+
+def generate_linked_eda_bundle(
+    values: Any,
+    time: np.ndarray | None = None,
+    *,
+    output_dir: str | Path = "tsdataforge_eda_bundle",
+    title: str = "TSDataForge Linked EDA Report",
+    docs_title: str = "TSDataForge Docs",
+    channel_names: list[str] | None = None,
+    include_suggested_spec: bool = True,
+) -> dict[str, str]:
+    """Generate a shareable bundle with a linked EDA report and docs site."""
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    docs_dir = out / "docs"
+    from ..agent.site import generate_docs_site
+
+    site = generate_docs_site(docs_dir, title=docs_title)
+    generate_eda_report(
+        values,
+        time,
+        channel_names=channel_names,
+        title=title,
+        output_path=out / "report.html",
+        include_suggested_spec=include_suggested_spec,
+        docs_base_url="docs/",
+        include_linked_resources=True,
+    )
+    manifest = {
+        "report": str(out / "report.html"),
+        "docs_index": str(docs_dir / "index.html"),
+        "docs_site": site.to_dict(),
+    }
+    (out / "bundle_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "README.md").write_text(
+        "# TSDataForge Linked EDA Bundle\n\n"
+        "- Open `report.html` for the human-readable report.\n"
+        "- Use links inside the report to jump to `docs/` pages, examples, API, and FAQ.\n"
+        "- Share this whole folder as a portable bundle.\n",
+        encoding="utf-8",
+    )
+    return {
+        "report": str(out / "report.html"),
+        "docs_index": str(docs_dir / "index.html"),
+        "bundle_manifest": str(out / "bundle_manifest.json"),
+    }
+
+
+def generate_linked_dataset_eda_bundle(
+    values: Any,
+    time: Any | None = None,
+    *,
+    output_dir: str | Path = "tsdataforge_dataset_eda_bundle",
+    title: str = "TSDataForge Linked Dataset EDA Report",
+    docs_title: str = "TSDataForge Docs",
+    max_series: int | None = 200,
+    seed: int = 0,
+) -> dict[str, str]:
+    """Generate a shareable dataset-level bundle with report + docs site."""
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    docs_dir = out / "docs"
+    from ..agent.site import generate_docs_site
+
+    site = generate_docs_site(docs_dir, title=docs_title)
+    generate_dataset_eda_report(
+        values,
+        time,
+        title=title,
+        output_path=out / "report.html",
+        max_series=max_series,
+        seed=seed,
+        docs_base_url="docs/",
+        include_linked_resources=True,
+    )
+    manifest = {
+        "report": str(out / "report.html"),
+        "docs_index": str(docs_dir / "index.html"),
+        "docs_site": site.to_dict(),
+    }
+    (out / "bundle_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "README.md").write_text(
+        "# TSDataForge Linked Dataset EDA Bundle\n\n"
+        "- Open `report.html` for the dataset-level report.\n"
+        "- Use links inside the report to jump to `docs/` pages, examples, API, and FAQ.\n"
+        "- Share this whole folder as a portable bundle.\n",
+        encoding="utf-8",
+    )
+    return {
+        "report": str(out / "report.html"),
+        "docs_index": str(docs_dir / "index.html"),
+        "bundle_manifest": str(out / "bundle_manifest.json"),
+    }
 
 
 

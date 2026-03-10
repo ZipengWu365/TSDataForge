@@ -8,13 +8,8 @@ from .trace import SeriesTrace
 from .analysis.describe import SeriesDescription, describe_series, infer_structure_tags, suggest_spec
 from .analysis.dataset import DatasetDescription, describe_dataset
 from .analysis.explain import SeriesExplanation, explain_series
-from .report.eda import (
-    EDAReport,
-    generate_eda_report,
-    generate_dataset_eda_report,
-    generate_linked_eda_bundle,
-    generate_linked_dataset_eda_bundle,
-)
+from .report.eda import EDAReport, generate_eda_report, generate_dataset_eda_report
+from .report.linked_bundle import generate_linked_eda_bundle, generate_linked_dataset_eda_bundle
 from .integrations.external import ExternalRollout, wrap_external_series
 from .integrations.live import fetch_coingecko_market_chart, fetch_fred_series, fetch_github_stars_series
 from .similarity import SimilarityMatrix, SimilarityResult, compare_series, explain_similarity, find_top_matches, pairwise_similarity

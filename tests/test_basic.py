@@ -3,7 +3,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from tsdataforge import Compiler, ObservationSpec, SeriesSpec, describe_series, generate_dataset, generate_series
+from tsdataforge import Compiler, ObservationSpec, SeriesSpec, describe_series, explain_series, generate_dataset, generate_series
 from tsdataforge import generate_eda_report, generate_dataset_eda_report
 from tsdataforge import generate_counterfactual_pair
 from tsdataforge.counterfactual import with_policy
@@ -226,6 +226,8 @@ def test_eda_report_generation(tmp_path):
     assert out.exists()
     assert "TSDataForge" in rep.html
     assert "seasonal" in rep.html
+    assert "Technical appendix" in rep.html
+    assert "--accent:#f89939" in rep.html
 
 
 def test_dataset_eda_report_generation(tmp_path):
@@ -313,3 +315,13 @@ def test_trace_aware_eda_report_generation(tmp_path):
     assert out.exists()
     assert "counterfactual" in rep.html.lower()
     assert "Control / causal trace summary" in rep.html
+
+
+def test_series_explanations_do_not_contain_encoding_artifacts():
+    t = np.arange(128, dtype=float)
+    y = np.sin(2 * np.pi * t / 16.0)
+    desc = describe_series(y, t)
+    expl = explain_series(desc)
+    payload = " ".join([expl.headline, *expl.bullets, *expl.tag_explanations.values()])
+    assert "鈮" not in payload
+    assert "虏" not in payload

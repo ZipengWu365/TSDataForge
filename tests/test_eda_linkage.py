@@ -40,7 +40,8 @@ def test_generate_eda_report_contains_linked_resources(tmp_path: Path):
     report = generate_eda_report(y, t, output_path=out, docs_base_url="docs/")
     assert out.exists()
     assert report.resource_hub is not None
-    assert "Linked docs / examples / API / FAQ" in report.html
+    assert "Next actions and useful links" in report.html
+    assert "Technical appendix" in report.html
     assert "docs/" in report.html
     assert (tmp_path / "report_resource_hub.json").exists()
     assert (tmp_path / "report_resource_hub.md").exists()
