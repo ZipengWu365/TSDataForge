@@ -1,0 +1,13 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
+.bundle/
+.DS_Store
+tsdataforge_breakout_audit_v0_*.md
+tsdataforge_breakout_audit_v0_*.py
+tsdataforge_breakout_audit_metrics_v0_*.json

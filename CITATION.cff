@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: TSDataForge
+message: "If you use TSDataForge, please cite the software artifact."
+type: software
+authors:
+  - family-names: OpenAI
+    given-names: ChatGPT
+repository-code: https://example.invalid/tsdataforge
+license: MIT
+version: 0.3.7

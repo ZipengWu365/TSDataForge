@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tsdataforge"
+version = "0.3.7"
+description = "Turn raw time-series assets into reports, handoff bundles, and agent-ready next actions."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Zipeng Wu", email = "zxw365@student.bham.ac.uk"}
+]
+keywords = ["time-series", "dataset-report", "agent-handoff", "eda", "schema-first", "signal-processing"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Scientific/Engineering :: Information Analysis"
+]
+dependencies = [
+  "numpy>=1.24",
+  "scipy>=1.10"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+viz = ["matplotlib>=3.7"]
+
+[project.urls]
+Homepage = "https://github.com/ZipengWu365/TSDataForge"
+Documentation = "https://zipengwu365.github.io/TSDataForge/"
+Source = "https://github.com/ZipengWu365/TSDataForge"
+Issues = "https://github.com/ZipengWu365/TSDataForge/issues"
+
+[tool.setuptools.packages.find]
+include = ["tsdataforge*"]
+
+[tool.setuptools.package-data]
+tsdataforge = ["demo_data/*.npz"]
+
+[project.scripts]
+tsdataforge = "tsdataforge.cli:main"

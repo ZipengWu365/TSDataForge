@@ -1,0 +1,11 @@
+name: Bug report
+description: Report a reproducible problem in TSDataForge
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction

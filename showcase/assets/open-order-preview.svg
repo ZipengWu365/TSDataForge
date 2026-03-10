@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="360" viewBox="0 0 1100 360">
+  <rect width="1100" height="360" fill="#0b1730"/>
+  <text x="40" y="45" fill="#eef2ff" font-size="30" font-family="Arial">Human and agent open order</text>
+  <rect x="40" y="80" width="470" height="240" rx="18" fill="#12203f" stroke="#7dd3fc" stroke-width="2"/>
+  <text x="70" y="120" fill="#eef2ff" font-size="24" font-family="Arial">Human</text>
+  <text x="70" y="160" fill="#b9c2e7" font-size="20" font-family="Arial">1. report.html</text>
+  <text x="70" y="195" fill="#b9c2e7" font-size="20" font-family="Arial">2. dataset_card.md</text>
+  <text x="70" y="230" fill="#b9c2e7" font-size="20" font-family="Arial">3. dataset_context.json</text>
+  <text x="70" y="265" fill="#b9c2e7" font-size="20" font-family="Arial">4. handoff_index_min.json</text>
+  <rect x="590" y="80" width="470" height="240" rx="18" fill="#142145" stroke="#a78bfa" stroke-width="2"/>
+  <text x="620" y="120" fill="#eef2ff" font-size="24" font-family="Arial">Agent</text>
+  <text x="620" y="160" fill="#b9c2e7" font-size="20" font-family="Arial">1. handoff_index_min.json</text>
+  <text x="620" y="195" fill="#b9c2e7" font-size="20" font-family="Arial">2. dataset_context.json</text>
+  <text x="620" y="230" fill="#b9c2e7" font-size="20" font-family="Arial">3. dataset_card.md</text>
+  <text x="620" y="265" fill="#b9c2e7" font-size="20" font-family="Arial">4. recommended_next_step</text>
+</svg>
