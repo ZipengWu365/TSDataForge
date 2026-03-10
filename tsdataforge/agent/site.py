@@ -19,100 +19,227 @@ from .positioning import PackageProfile, PositioningMatrix, build_positioning_ma
 STYLE = dedent(
     """
     :root {
-      --bg: #07111f;
-      --bg-2: #0a1830;
-      --panel: #101b36;
-      --panel-2: #142145;
-      --text: #eef2ff;
-      --muted: #b9c2e7;
-      --accent: #7dd3fc;
-      --accent-2: #a78bfa;
-      --accent-3: #34d399;
-      --border: rgba(255,255,255,0.10);
-      --shadow: 0 20px 50px rgba(0,0,0,0.20);
+      --bg: #ffffff;
+      --bg-muted: #f5f7fa;
+      --panel: #ffffff;
+      --panel-muted: #f8fafc;
+      --text: #16202a;
+      --muted: #5c6775;
+      --accent: #f89939;
+      --accent-soft: #fff3e5;
+      --link: #1f5fbf;
+      --border: #d9dee5;
+      --border-strong: #c7cfd9;
+      --shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      --code-bg: #f7f8fa;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: linear-gradient(180deg, #07111f 0%, #0b1730 100%);
+      font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
       color: var(--text);
     }
-    a { color: var(--accent); text-decoration: none; }
+    a { color: var(--link); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .nav {
-      position: sticky; top: 0; z-index: 10;
-      background: rgba(7,17,31,0.92);
-      backdrop-filter: blur(10px);
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(255,255,255,0.96);
       border-bottom: 1px solid var(--border);
     }
     .nav-inner {
-      max-width: 1240px; margin: 0 auto; padding: 14px 18px;
-      display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
     }
-    .brand { color: white; font-weight: 800; letter-spacing: 0.02em; }
-    .nav-links { display: flex; gap: 12px; flex-wrap: wrap; }
+    .brand {
+      color: var(--text);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      font-size: 18px;
+    }
+    .brand small {
+      color: var(--muted);
+      font-weight: 600;
+      margin-left: 8px;
+    }
     .nav-right { display: flex; gap: 10px; align-items: center; }
-    .lang-switch {
-      display: inline-flex; align-items: center; padding: 7px 12px; border-radius: 999px;
-      background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text);
-      font-size: 13px;
+    .top-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 14px;
     }
-    .shell { max-width: 1240px; margin: 0 auto; padding: 28px 18px 80px; }
-    .hero {
-      border: 1px solid var(--border); border-radius: 26px; padding: 30px;
-      background:
-        radial-gradient(circle at top right, rgba(125,211,252,0.16), transparent 35%),
-        radial-gradient(circle at top left, rgba(167,139,250,0.16), transparent 32%),
-        var(--panel);
+    .lang-switch {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 6px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 14px;
+    }
+    .shell {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 24px 20px 64px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+    }
+    .sidebar {
+      position: sticky;
+      top: 76px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      padding: 18px 16px;
       box-shadow: var(--shadow);
     }
-    .hero h1 { margin: 0 0 12px 0; font-size: 42px; line-height: 1.06; }
-    .hero p { color: var(--muted); font-size: 18px; max-width: 980px; }
-    .badges, .pills, .toc { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
-    .badge, .pill, .toc a {
-      display: inline-flex; align-items: center; padding: 7px 11px; border-radius: 999px;
-      border: 1px solid var(--border); font-size: 13px;
+    .sidebar-title {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+      font-weight: 700;
     }
-    .badge { background: rgba(125,211,252,0.12); color: #e8fbff; }
-    .pill { background: rgba(167,139,250,0.12); color: #f4edff; }
-    .toc a { background: rgba(255,255,255,0.06); color: var(--text); }
+    .sidebar-nav {
+      display: grid;
+      gap: 4px;
+    }
+    .sidebar-link {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .sidebar-link.active {
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      font-weight: 700;
+      padding-left: 7px;
+    }
+    .main {
+      min-width: 0;
+    }
+    .hero {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 28px;
+      background: var(--panel-muted);
+      box-shadow: var(--shadow);
+    }
+    .hero h1 {
+      margin: 0 0 10px 0;
+      font-size: 38px;
+      line-height: 1.12;
+    }
+    .hero p { color: var(--muted); font-size: 17px; max-width: 900px; margin: 0; }
+    .badges, .pills, .toc { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .badge, .pill, .toc a {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      background: var(--panel);
+      color: var(--muted);
+    }
+    .badge { border-color: #f0c18c; background: #fff8ef; color: #8a4d00; }
+    .pill { background: #f8fafc; color: var(--muted); }
+    .toc {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+    .toc a { border-radius: 6px; }
     .section { margin-top: 34px; }
-    .section h2 { font-size: 30px; margin-bottom: 8px; }
-    .section h3 { font-size: 22px; margin-bottom: 6px; }
-    .kicker { color: var(--accent); text-transform: uppercase; font-weight: 700; font-size: 12px; letter-spacing: 0.04em; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+    .section h2 { font-size: 28px; margin-bottom: 10px; line-height: 1.2; }
+    .section h3 { font-size: 21px; margin-bottom: 8px; line-height: 1.3; }
+    .kicker { color: var(--muted); text-transform: uppercase; font-weight: 700; font-size: 12px; letter-spacing: 0.08em; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 16px; }
     .grid.tight { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
     .two-col { display: grid; grid-template-columns: 1.12fr 0.88fr; gap: 18px; }
     .card {
-      background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.16);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: var(--shadow);
     }
     .card p, .card li { color: var(--muted); }
     .card h3, .card h4 { margin-top: 0; }
-    .table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    .table th, .table td { border-bottom: 1px solid var(--border); padding: 10px 8px; text-align: left; vertical-align: top; }
-    .table th { color: white; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--panel); border: 1px solid var(--border); }
+    .table th, .table td { border-bottom: 1px solid var(--border); padding: 11px 10px; text-align: left; vertical-align: top; }
+    .table th { color: var(--text); background: var(--panel-muted); font-weight: 700; }
     .small { font-size: 13px; color: var(--muted); }
     .muted { color: var(--muted); }
     .tip, .notice, .warning {
-      border-radius: 14px; padding: 12px 14px; border-left: 4px solid var(--accent-3);
-      background: rgba(52,211,153,0.10);
+      border-radius: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-left: 4px solid #2b7a4b;
+      background: #f4faf6;
     }
-    .notice { border-left-color: var(--accent-2); background: rgba(167,139,250,0.10); }
-    .warning { border-left-color: #fbbf24; background: rgba(251,191,36,0.12); }
+    .notice { border-left-color: var(--accent); background: #fff8ef; }
+    .warning { border-left-color: #d97706; background: #fff7e8; }
     .breadcrumbs { color: var(--muted); margin: 12px 0 16px; font-size: 14px; }
     .breadcrumbs a { color: var(--muted); }
     pre {
-      background: #091426; border: 1px solid var(--border); border-radius: 14px; padding: 14px; overflow: auto;
-      color: #e7fbff;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      overflow: auto;
+      color: #0f172a;
     }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .footer { margin-top: 60px; color: var(--muted); font-size: 13px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: rgba(15, 23, 42, 0.04);
+      border-radius: 4px;
+      padding: 0 4px;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+    }
+    .footer {
+      margin-top: 56px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+      padding-top: 18px;
+    }
     .link-list { padding-left: 18px; }
     .link-list li { margin-bottom: 8px; }
-    @media (max-width: 980px) { .two-col { grid-template-columns: 1fr; } .hero h1 { font-size: 36px; } }
+    @media (max-width: 1080px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .nav-inner { padding: 12px 14px; }
+      .shell { padding: 18px 14px 48px; }
+      .hero { padding: 22px; }
+      .hero h1 { font-size: 30px; }
+    }
     """
 ).strip()
 
@@ -282,10 +409,11 @@ def _switch_href(lang: str, slug: str, level: int = 0) -> str:
 
 
 
-def _nav_html(lang: str, *, base: str = "") -> str:
+def _nav_html(lang: str, *, base: str = "", current_slug: str = "") -> str:
     links = []
     for href, en, zh in NAV_ITEMS:
-        links.append(f"<a href='{base}{href}'>{escape(_tr(lang, en, zh))}</a>")
+        active = " active" if href == current_slug else ""
+        links.append(f"<a class='sidebar-link{active}' href='{base}{href}'>{escape(_tr(lang, en, zh))}</a>")
     return "".join(links)
 
 
@@ -303,14 +431,25 @@ def _page(title: str, body: str, *, lang: str, slug: str, base: str = "", level:
 <body>
   <div class='nav'>
     <div class='nav-inner'>
-      <div class='brand'>TSDataForge v0.3.7</div>
-      <div class='nav-links'>{_nav_html(lang, base=base)}</div>
-      <div class='nav-right'><a class='lang-switch' href='{_switch_href(lang, slug, level=level)}'>{escape(switch_label)}</a></div>
+      <div class='brand'>TSDataForge <small>Docs v0.3.7</small></div>
+      <div class='nav-right'>
+        <a class='top-link' href='{base}index.html'>{escape(_tr(lang, 'Docs home', '文档首页'))}</a>
+        <a class='top-link' href='https://github.com/ZipengWu365/TSDataForge'>GitHub</a>
+        <a class='lang-switch' href='{_switch_href(lang, slug, level=level)}'>{escape(switch_label)}</a>
+      </div>
     </div>
   </div>
   <div class='shell'>
-    {body}
-    <div class='footer'>Generated by <code>tsdataforge.agent.generate_docs_site</code>. {_tr(lang, 'This is a fully static bilingual HTML bundle.', '这是一个完全静态的双语 HTML bundle。')}</div>
+    <div class='layout'>
+      <aside class='sidebar'>
+        <div class='sidebar-title'>{escape(_tr(lang, 'Documentation', '文档导航'))}</div>
+        <div class='sidebar-nav'>{_nav_html(lang, base=base, current_slug=slug)}</div>
+      </aside>
+      <main class='main'>
+        {body}
+        <div class='footer'>Generated by <code>tsdataforge.agent.generate_docs_site</code>. {_tr(lang, 'This is a fully static bilingual HTML bundle.', '这是一个完全静态的双语 HTML bundle。')}</div>
+      </main>
+    </div>
   </div>
 </body>
 </html>"""
