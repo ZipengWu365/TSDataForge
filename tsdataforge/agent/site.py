@@ -1034,7 +1034,7 @@ def _index_page(lang: str, catalog: list[ExampleRecipe], tutorials: list[Tutoria
         _tr(lang, 'Saved assets should carry schema, context, cards, and human-readable reports.', '保存下来的资产应该自带 schema、context、card 和可读报告。'),
         _tr(lang, 'Public APIs should explain why they exist, not only list signatures.', '公共 API 不该只列签名，也应该解释自己为什么存在。'),
     ]))
-    body += _card(_tr(lang, 'The shortest mental model', '最短心智模型'), _bullets([
+    body += _card(_tr(lang, 'The simplest way to think about it', '最简单的理解方式'), _bullets([
         'SeriesSpec → GeneratedSeries',
         'SeriesDataset → TaskDataset',
         'describe / EDA → choose task',
