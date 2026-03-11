@@ -2,6 +2,18 @@
 
 > **Turn raw time-series files into reports, handoff bundles, and agent-ready next actions.**
 
+<p align="left">
+  <a href="https://zipengwu365.github.io/TSDataForge/"><img alt="Docs" src="https://img.shields.io/badge/docs-GitHub%20Pages-0b57d0"></a>
+  <a href="https://github.com/ZipengWu365/TSDataForge"><img alt="GitHub" src="https://img.shields.io/badge/repo-TSDataForge-111827"></a>
+</p>
+
+<p align="left">
+  <a href="https://www.birmingham.ac.uk/">
+    <img src="https://www.birmingham.ac.uk/_s1t51Q_30649ea7-7b67-4dd9-9d18-4db7fd5c8933/static/img/icons/favicon-32x32.png" alt="University of Birmingham" width="18" height="18">
+  </a>
+  Built by <strong>Zipeng Wu</strong> at the <a href="https://www.birmingham.ac.uk/">University of Birmingham</a>.
+</p>
+
 TSDataForge is an **asset-first time-series library**.
 
 It is designed for the moment **before** you pick a model zoo, estimator, or forecasting benchmark. Give it a raw time-series asset and it returns a:
@@ -9,17 +21,21 @@ It is designed for the moment **before** you pick a model zoo, estimator, or for
 - **report** for humans
 - **dataset card** for handoff
 - **compact context** for agents
+- **decision record** for explicit next-step logic
 - **next-action plan** for routing the dataset into the right downstream task
 
 It is **not** mainly a forecasting toolkit.
 It is **not** trying to replace `sktime`, `Darts`, `tsfresh`, `STUMPY`, or `YData Profiling`.
 It sits **around the dataset asset itself**.
 
+Docs site:
+[zipengwu365.github.io/TSDataForge](https://zipengwu365.github.io/TSDataForge/)
+
 <p align="center">
   <img src="showcase/assets/raw-vs-bundle.svg" alt="Raw time-series asset vs TSDataForge bundle" width="900">
 </p>
 
-> **Give TSDataForge one raw time-series file and it returns a report, a dataset card, a compact context, and the next actions in about one second.**
+> **Give TSDataForge one raw time-series file and it returns a report, a dataset card, a compact context, an explicit decision record, and the next actions in about one second.**
 
 ---
 
@@ -51,7 +67,7 @@ These are the flagship demos for a new GitHub visitor. They start from **real pu
 |---|---|---|
 | **Public ECG arrhythmia handoff** | real biomedical signal windows; good for event/anomaly routing | `python -m tsdataforge demo --scenario ecg_public --output ecg_bundle` |
 | **Public US macro handoff** | real inflation / unemployment / T-bill windows; good for regime-aware routing | `python -m tsdataforge demo --scenario macro_public --output macro_bundle` |
-| **Public climate CO₂ handoff** | real weekly atmospheric CO₂ with trend, seasonality, and missingness | `python -m tsdataforge demo --scenario climate_public --output climate_bundle` |
+| **Public climate CO2 handoff** | real weekly atmospheric CO2 with trend, seasonality, and missingness | `python -m tsdataforge demo --scenario climate_public --output climate_bundle` |
 
 Source notes and provenance:
 [docs/public_data_provenance.md](docs/public_data_provenance.md)
@@ -87,7 +103,7 @@ There is also a public physical-science demo that is not yet promoted on the fir
 |---|---|---|---|
 | `load_asset(source, time=None, dataset_id=None)` | load files or arrays into a TSDataForge asset | `SeriesDataset` or `TaskDataset` | one obvious loader for `.npy`, `.npz`, `.csv`, `.txt`, `.json`, or raw arrays |
 | `report(source, output_path="report.html")` | generate the first human-readable EDA artifact | `EDAReport` | the package should feel like a dataset report layer before it feels like a toolkit |
-| `handoff(source, output_dir="handoff_bundle")` | package report, card, context, schemas, and next actions | `DatasetHandoffBundle` | shortest path from raw asset to reusable output |
+| `handoff(source, output_dir="handoff_bundle")` | package report, card, context, decision logic, schemas, and next actions | `DatasetHandoffBundle` | shortest path from raw asset to reusable output |
 | `taskify(source, task=..., ...)` | derive a task-specific dataset after the asset is understood | `TaskDataset` | taskification should come **after** understanding |
 | `demo(output_dir="demo_bundle", scenario=...)` | generate a built-in demo bundle | `DatasetHandoffBundle` | every public repo needs a credible copy-paste first success |
 
@@ -120,6 +136,9 @@ pip install ".[viz]"
 python -m tsdataforge demo --scenario ecg_public --output demo_bundle
 ```
 
+Docs and showcase pages:
+[zipengwu365.github.io/TSDataForge](https://zipengwu365.github.io/TSDataForge/)
+
 ### Local GUI
 
 If you want the package to feel like a product instead of a CLI, start the local GUI:
@@ -134,6 +153,7 @@ Then open `http://127.0.0.1:8765/`, drag in one `.npy/.npz/.csv/.txt/.json` file
 - `report.html`
 - `dataset_card.md`
 - `dataset_context.json`
+- `decision_record.json`
 - `handoff_index_min.json`
 
 Open these files in this order.
@@ -141,9 +161,9 @@ Open these files in this order.
 ### Human open order
 
 1. `demo_bundle/report.html`
-2. `demo_bundle/dataset_card.md`
-3. `demo_bundle/dataset_context.json`
-4. `demo_bundle/handoff_index_min.json`
+2. `demo_bundle/decision_record.md`
+3. `demo_bundle/dataset_card.md`
+4. `demo_bundle/dataset_context.json`
 5. `demo_bundle/action_plan.json` if you want the full breakdown
 
 ### Agent open order
@@ -160,6 +180,7 @@ Open these files in this order.
 ### Why this open order exists
 
 - **report.html** is the fastest human explanation layer
+- **decision_record.json** is the explicit routing layer for agents and audits
 - **dataset_card.md** is the teammate handoff layer
 - **dataset_context.json** is the compact semantic layer for agents
 - **handoff_index_min.json** is the tiny first-entry routing contract
@@ -219,6 +240,7 @@ print(bundle.index.to_min_dict())
 | `report.html` | outcome-first EDA report | human inspection |
 | `dataset_card.md` / `.json` | human + machine-readable dataset summary | teammate handoff |
 | `dataset_context.json` / `.md` | compact semantic summary | agent handoff |
+| `decision_record.json` / `.md` | explicit facts, risks, candidate tasks, and one next step | routing and audit |
 | `handoff_index_min.json` / `.md` | **smallest** first-entry agent contract | first agent read |
 | `handoff_index.json` / `.md` | expanded routing map | human/agent routing summary |
 | `action_plan.json` / `.md` | detailed already_done / recommended / optional plan | deeper execution guidance |
@@ -268,7 +290,7 @@ It pairs well with:
 
 - **medicine**: public ECG handoff, ICU shift handoff, wearable event review
 - **economics**: inflation / unemployment / rates routing before forecasting
-- **climate**: atmospheric CO₂ anomaly and seasonality handoff
+- **climate**: atmospheric CO2 anomaly and seasonality handoff
 - **engineering**: drift / burst / maintenance-aware sensor handoff
 - **agent workflows**: compact context + tool contracts + next-step routing
 
@@ -276,14 +298,14 @@ It pairs well with:
 
 ## Repo pointers
 
-- `docs/quickstart.md` — fastest first-success path
-- `docs/handoff.md` — the central product story
-- `docs/showcase.md` — real public demos and showcase ideas
-- `docs/agent_playbook.md` — agent-first usage patterns
-- `docs/api_reference.md` — public and advanced API map
-- `examples/` — runnable scripts
-- `notebooks/` — walkthrough notebooks
-- `showcase/` — GitHub-facing visual assets
+- `docs/quickstart.md` - fastest first-success path
+- `docs/handoff.md` - the central product story
+- `docs/showcase.md` - real public demos and showcase ideas
+- `docs/agent_playbook.md` - agent-first usage patterns
+- `docs/api_reference.md` - public and advanced API map
+- `examples/` - runnable scripts
+- `notebooks/` - walkthrough notebooks
+- `showcase/` - GitHub-facing visual assets
 
 ---
 

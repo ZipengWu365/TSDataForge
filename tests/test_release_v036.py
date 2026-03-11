@@ -36,7 +36,7 @@ def test_demo_and_handoff_default_to_schema_first(tmp_path: Path):
 def test_cli_help_and_demo_summary_are_clean(tmp_path: Path, capsys):
     parser = build_parser()
     help_text = parser.format_help()
-    assert "�" not in help_text
+    assert "\ufffd" not in help_text
     assert "report and handoff workflows for time-series dataset assets" in help_text
 
     pytest.importorskip("matplotlib")
@@ -64,7 +64,9 @@ def test_readme_mentions_real_world_scenarios_and_open_order():
     handoff_md = Path("docs/handoff.md").read_text(encoding="utf-8")
     assert "Public ECG arrhythmia" in readme
     assert "Public US macro" in readme
-    assert "Public climate CO₂" in readme
+    assert "Public climate CO2" in readme
+    assert "https://zipengwu365.github.io/TSDataForge/" in readme
+    assert "University of Birmingham" in readme
     assert "Open these files in this order" in readme
     assert "agent open order" in handoff_md.lower()
     assert "30-second path" in quickstart
