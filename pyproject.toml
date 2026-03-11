@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tsdataforge"
 version = "0.3.7"
-description = "Turn raw time-series assets into reports, handoff bundles, and agent-ready next actions."
+description = "Time-series profiling and handoff for turning raw datasets into reports, decision records, and reusable bundles."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
   {name = "Zipeng Wu", email = "zxw365@student.bham.ac.uk"}
 ]
-keywords = ["time-series", "dataset-report", "agent-handoff", "eda", "schema-first", "signal-processing"]
+keywords = ["time-series", "profiling", "dataset-report", "handoff", "eda", "dataset-card", "signal-processing"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",

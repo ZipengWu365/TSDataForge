@@ -332,8 +332,8 @@ class DatasetHandoffBundle:
         return self
 
 
-WOW_SERIES = "Give TSDataForge one raw time-series file and it returns a report, a dataset card, a compact context, and the next actions in about one second."
-WOW_TASK = "Give TSDataForge one task dataset and it returns a compact handoff surface that tells the next person or agent what to open and what to do next."
+WOW_SERIES = "Give TSDataForge one raw time-series dataset and it returns a report, a dataset card, a compact context, and the next steps in about one second."
+WOW_TASK = "Give TSDataForge one task dataset and it returns a compact handoff surface that tells the next person or automation what to open and what to do next."
 
 
 def _render_action_plan_markdown(index: HandoffIndex) -> str:

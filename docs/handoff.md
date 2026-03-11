@@ -6,9 +6,11 @@ The central product idea is:
 dataset -> report -> handoff bundle -> next action
 ```
 
+Use this path when you need to understand a raw time-series dataset before modeling or before handing it to another person, script, or agent.
+
 ## What the bundle is for
 
-A handoff bundle turns one time-series asset into a small, shareable, predictable directory containing:
+A handoff bundle turns one time-series dataset into a small, shareable, predictable directory containing:
 
 - `report.html`
 - `dataset_card.md`
@@ -40,3 +42,11 @@ A handoff bundle turns one time-series asset into a small, shareable, predictabl
 - `action_plan.json` contains the detailed already_done / recommended / optional breakdown
 
 This keeps the first agent read small, while preserving a richer execution plan when needed.
+
+## Install note
+
+TSDataForge is not on PyPI yet. Install from GitHub with:
+
+```bash
+pip install "git+https://github.com/ZipengWu365/TSDataForge.git"
+```

@@ -401,8 +401,8 @@ def build_gui_html() -> str:
   <div class="shell">
     <section class="hero">
       <div class="eyebrow">TSDataForge Local GUI</div>
-      <h1>Drop one raw time-series file. Get a report, handoff bundle, and next action.</h1>
-      <p>This GUI is intentionally thin. It is a local front-end over the existing TSDataForge handoff flow, built for the exact moment when a scientist or engineer wants a result before they want an API tour.</p>
+      <h1>Drop one raw time-series dataset. Get a profiling report, handoff bundle, and next step.</h1>
+      <p>This GUI is intentionally thin. It is a local front-end over the existing TSDataForge profiling and handoff flow, built for the exact moment when a scientist or engineer wants a result before they want an API tour.</p>
       <div class="hero-grid">
         <div class="panel">
           <h2>Bring your own file</h2>

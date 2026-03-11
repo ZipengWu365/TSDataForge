@@ -12,7 +12,7 @@ from .surface import report as report_asset
 
 
 WOW_SENTENCE = (
-    "Give TSDataForge one raw time-series file and it returns a report, a dataset card, a compact context, and the next actions in about one second."
+    "Give TSDataForge one raw time-series dataset and it returns a report, a dataset card, a compact context, and the next steps in about one second."
 )
 
 
@@ -79,7 +79,7 @@ def _cmd_ui(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tsdataforge",
-        description="TSDataForge CLI - report and handoff workflows for time-series dataset assets.",
+        description="TSDataForge CLI - profiling and handoff workflows for raw time-series datasets.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

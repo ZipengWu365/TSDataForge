@@ -1,6 +1,6 @@
 # TSDataForge
 
-> **Turn raw time-series files into reports, handoff bundles, and agent-ready next actions.**
+> **Turn raw time-series data into profiling reports, handoff bundles, and clear next steps.**
 
 <p align="left">
   <a href="https://zipengwu365.github.io/TSDataForge/"><img alt="Docs" src="https://img.shields.io/badge/docs-GitHub%20Pages-0b57d0"></a>
@@ -18,25 +18,25 @@
 
 <p align="left">
   <sub>
-    <a href="https://www.birmingham.ac.uk/">University page</a> ·
-    <a href="https://github.com/ZipengWu365/TSDataForge">GitHub repo</a> ·
+    <a href="https://www.birmingham.ac.uk/">University page</a> -
+    <a href="https://github.com/ZipengWu365/TSDataForge">GitHub repo</a> -
     <a href="https://zipengwu365.github.io/TSDataForge/">Docs</a>
   </sub>
 </p>
 
-TSDataForge is an **asset-first time-series library**.
+TSDataForge is a **time-series profiling and handoff layer**.
 
-It is designed for the moment **before** you pick a model zoo, estimator, or forecasting benchmark. Give it a raw time-series asset and it returns a:
+It is designed for the moment **before** you pick a model zoo, estimator, or forecasting benchmark. Give it a raw time-series dataset and it returns a:
 
 - **report** for humans
 - **dataset card** for handoff
-- **compact context** for agents
+- **compact context** for machine-readable handoff
 - **decision record** for explicit next-step logic
 - **next-action plan** for routing the dataset into the right downstream task
 
 It is **not** mainly a forecasting toolkit.
 It is **not** trying to replace `sktime`, `Darts`, `tsfresh`, `STUMPY`, or `YData Profiling`.
-It sits **around the dataset asset itself**.
+It sits **between raw data and downstream modeling**.
 
 Docs site:
 [zipengwu365.github.io/TSDataForge](https://zipengwu365.github.io/TSDataForge/)
@@ -45,7 +45,7 @@ Docs site:
   <img src="showcase/assets/raw-vs-bundle.svg" alt="Raw time-series asset vs TSDataForge bundle" width="900">
 </p>
 
-> **Give TSDataForge one raw time-series file and it returns a report, a dataset card, a compact context, an explicit decision record, and the next actions in about one second.**
+> **Give TSDataForge one raw time-series dataset and it returns a report, a dataset card, a compact context, an explicit decision record, and the next steps in about one second.**
 
 ---
 
@@ -53,9 +53,9 @@ Docs site:
 
 Use TSDataForge when you want to:
 
-- explain a time-series dataset **before** choosing a model
-- turn a raw file into a **shareable report + handoff bundle**
-- hand a dataset to another researcher or an agent **without pasting raw arrays**
+- understand a raw time-series dataset **before** choosing a model
+- turn a raw file into a **shareable profiling report + handoff bundle**
+- hand a dataset to another researcher, teammate, or automation flow **without pasting raw arrays**
 - keep one base dataset reusable across forecasting, anomaly, regime, causal, control, or similarity workflows
 - save **schemas, cards, contexts, and explicit next actions** next to the dataset asset
 
@@ -112,7 +112,7 @@ There is also a public physical-science demo that is not yet promoted on the fir
 | API | What it does | Returns | Why it exists |
 |---|---|---|---|
 | `load_asset(source, time=None, dataset_id=None)` | load files or arrays into a TSDataForge asset | `SeriesDataset` or `TaskDataset` | one obvious loader for `.npy`, `.npz`, `.csv`, `.txt`, `.json`, or raw arrays |
-| `report(source, output_path="report.html")` | generate the first human-readable EDA artifact | `EDAReport` | the package should feel like a dataset report layer before it feels like a toolkit |
+| `report(source, output_path="report.html")` | generate the first human-readable profiling artifact | `EDAReport` | the package should feel like a time-series profiling layer before it feels like a toolkit |
 | `handoff(source, output_dir="handoff_bundle")` | package report, card, context, decision logic, schemas, and next actions | `DatasetHandoffBundle` | shortest path from raw asset to reusable output |
 | `taskify(source, task=..., ...)` | derive a task-specific dataset after the asset is understood | `TaskDataset` | taskification should come **after** understanding |
 | `demo(output_dir="demo_bundle", scenario=...)` | generate a built-in demo bundle | `DatasetHandoffBundle` | every public repo needs a credible copy-paste first success |
@@ -127,21 +127,25 @@ dataset -> report -> handoff bundle -> next action
 
 ### Install
 
-Core:
+From GitHub:
 
 ```bash
-pip install .
+pip install "git+https://github.com/ZipengWu365/TSDataForge.git"
 ```
 
-With visualization extras:
+From a local clone with visualization extras:
 
 ```bash
 pip install ".[viz]"
 ```
 
+PyPI publishing is not live yet, so `pip install tsdataforge` will not work until a package release is published there.
+
 ### 60-second path
 
 ```bash
+git clone https://github.com/ZipengWu365/TSDataForge.git
+cd TSDataForge
 pip install ".[viz]"
 python -m tsdataforge demo --scenario ecg_public --output demo_bundle
 ```
@@ -154,6 +158,8 @@ Docs and showcase pages:
 If you want the package to feel like a product instead of a CLI, start the local GUI:
 
 ```bash
+git clone https://github.com/ZipengWu365/TSDataForge.git
+cd TSDataForge
 pip install ".[viz]"
 python -m tsdataforge ui
 ```

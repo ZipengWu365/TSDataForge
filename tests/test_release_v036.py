@@ -37,7 +37,7 @@ def test_cli_help_and_demo_summary_are_clean(tmp_path: Path, capsys):
     parser = build_parser()
     help_text = parser.format_help()
     assert "\ufffd" not in help_text
-    assert "report and handoff workflows for time-series dataset assets" in help_text
+    assert "profiling and handoff workflows for raw time-series" in help_text
 
     pytest.importorskip("matplotlib")
     code = cli_main(["demo", "--scenario", "ecg_public", "--output", str(tmp_path / "ecg_bundle"), "--n-series", "8", "--length", "256"])
@@ -69,6 +69,7 @@ def test_readme_mentions_real_world_scenarios_and_open_order():
     assert "University of Birmingham" in readme
     assert "zxw365@student.bham.ac.uk" in readme
     assert "license-MIT" in readme
+    assert "pip install \"git+https://github.com/ZipengWu365/TSDataForge.git\"" in readme
     assert "Open these files in this order" in readme
     assert "agent open order" in handoff_md.lower()
     assert "30-second path" in quickstart

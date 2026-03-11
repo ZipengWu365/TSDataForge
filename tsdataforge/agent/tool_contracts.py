@@ -183,7 +183,7 @@ def build_tool_contracts(version: str = "0.3.7") -> ToolContractCatalog:
                 },
             },
             output_schema=_artifact_output_schema("handoff"),
-            input_example={"source": "my_dataset.npy", "output_dir": "handoff_bundle", "goal": "prepare an agent-ready dataset transfer"},
+            input_example={"source": "my_dataset.npy", "output_dir": "handoff_bundle", "goal": "prepare a profiling handoff before model selection"},
         ),
         ToolContract(
             tool_id="taskify",

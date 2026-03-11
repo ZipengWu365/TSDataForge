@@ -65,7 +65,7 @@ class PositioningMatrix:
             "",
             "## Reading guide" if not zh else "## 阅读指南",
             "",
-            "TSDataForge is not trying to replace the forecasting/modeling/toolbox ecosystem. Its job is to sit around raw or simulated sequence assets and make them easier to explain, taskify, save, compare, and hand off to humans or agents."
+            "TSDataForge is not trying to replace the forecasting/modeling/toolbox ecosystem. Its job is to sit between raw time-series datasets and downstream libraries so the data is easier to explain, taskify, save, compare, and hand off."
             if not zh else
             "TSDataForge 并不是要替代 forecasting / modeling / toolbox 生态。它的职责是贴着原始或仿真的时序资产工作，让这些资产更容易被解释、任务化、保存、比较，并交给人或 agent。",
             "",
@@ -77,30 +77,30 @@ _BASE_PROFILES = [
     PackageProfile(
         package_id="tsdataforge",
         title="TSDataForge",
-        official_url="https://github.com/your-org/tsdataforge",
+        official_url="https://github.com/ZipengWu365/TSDataForge",
         kind="self",
-        one_liner="A structure-first asset layer for time series: spec, EDA, taskification, cards, docs, and agent-ready contexts.",
+        one_liner="A time-series profiling and handoff layer for reports, cards, contexts, decision records, and reusable bundles before modeling.",
         primary_strengths=(
-            "executable structure specs",
-            "real-data EDA with task routing",
+            "time-series profiling before model choice",
+            "report + card + context + decision record packaging",
             "one base dataset -> many task datasets",
-            "agent-friendly compact contexts and cards",
+            "compact handoff artifacts for people and automation",
             "public docs and shareable bundles",
         ),
         best_for=(
-            "connecting raw/simulated sequences to reusable assets",
-            "explaining real data before model selection",
+            "understanding raw time-series datasets before modeling",
+            "handing datasets to teammates or automation without raw arrays",
             "deriving forecasting/classification/causal/control views from one base dataset",
-            "shipping low-token, self-explaining artifacts",
+            "shipping compact, self-explaining artifacts",
         ),
         not_the_main_job=(
             "large-scale simulator replacement",
             "model zoo for forecasting",
             "single-purpose feature extraction",
         ),
-        tsdataforge_difference="This is the reference row: TSDataForge focuses on the layer between sequence assets and downstream model libraries.",
-        combine_pattern="Use it as the front-end asset and explanation layer, then pass task datasets to forecasting, classification, or similarity libraries.",
-        agent_token_story="Contexts, cards, schemas, and docs bundles make agent workflows smaller, more stable, and easier to audit.",
+        tsdataforge_difference="This is the reference row: TSDataForge focuses on the profiling and handoff layer between raw datasets and downstream model libraries.",
+        combine_pattern="Use it as the data-understanding and handoff layer, then pass task datasets to forecasting, classification, or similarity libraries.",
+        agent_token_story="Contexts, cards, schemas, and docs bundles make automation workflows smaller, more stable, and easier to audit.",
         environment_ids=("jupyter-notebook", "python-script", "llm-agent-workflow", "static-docs-site"),
         keywords=("asset layer", "EDA", "taskification", "agent", "docs"),
         one_liner_zh="一个 structure-first 的时间序列资产层：spec、EDA、taskification、cards、docs 和 agent-ready contexts。",
@@ -289,8 +289,8 @@ def _version() -> str:
 
 
 THESIS_EN = (
-    "TSDataForge is not trying to outgrow the entire time-series ecosystem. "
-    "Its position is narrower and more deliberate: it is the layer that turns raw or simulated sequence data into explainable, task-ready, shareable, and agent-friendly assets."
+    "TSDataForge is not trying to own the whole time-series ecosystem. "
+    "Its position is narrower and more deliberate: it is the profiling and handoff layer that helps teams understand raw or simulated time-series datasets before modeling or transfer."
 )
 THESIS_ZH = (
     "TSDataForge 不是想把整个时间序列生态都重做一遍。它的位置更窄也更明确："

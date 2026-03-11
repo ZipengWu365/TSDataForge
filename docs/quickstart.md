@@ -1,12 +1,30 @@
 # TSDataForge Quickstart
 
-TSDataForge is a **time-series dataset report + handoff layer**.
+TSDataForge is a **time-series profiling and handoff layer**.
 
-Start here if you want the fastest path from a raw asset to a report, a dataset card, a compact context, and a next-action plan.
+Start here if you want the fastest path from a raw dataset to a profiling report, a dataset card, a compact context, and a next-action plan.
+
+## Install
+
+From GitHub:
+
+```bash
+pip install "git+https://github.com/ZipengWu365/TSDataForge.git"
+```
+
+From a local clone with report plots and the GUI:
+
+```bash
+pip install ".[viz]"
+```
+
+PyPI publishing is not live yet, so `pip install tsdataforge` will not work until a package release is published there.
 
 ## 30-second path
 
 ```bash
+git clone https://github.com/ZipengWu365/TSDataForge.git
+cd TSDataForge
 pip install ".[viz]"
 python -m tsdataforge demo --output demo_bundle
 ```
@@ -22,9 +40,11 @@ Then open:
 
 ## Local GUI path
 
-If the user does not want to start from a terminal workflow, launch the local GUI:
+If you do not want to start from a terminal workflow, launch the local GUI:
 
 ```bash
+git clone https://github.com/ZipengWu365/TSDataForge.git
+cd TSDataForge
 pip install ".[viz]"
 python -m tsdataforge ui
 ```
@@ -54,4 +74,4 @@ bundle = handoff(base, output_dir="my_bundle")
 forecast = taskify(base, task="forecasting", horizon=24)
 ```
 
-Only `taskify(...)` **after** the report makes sense.
+Only call `taskify(...)` **after** the report makes sense.
