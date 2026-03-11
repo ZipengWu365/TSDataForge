@@ -150,6 +150,35 @@ STYLE = dedent(
       line-height: 1.12;
     }
     .hero p { color: var(--muted); font-size: 17px; max-width: 900px; margin: 0; }
+    .hero-meta {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .hero-meta-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .hero-meta-line img {
+      vertical-align: middle;
+    }
+    .hero-meta small {
+      color: var(--muted);
+    }
+    .badge-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .badge-links a {
+      display: inline-flex;
+      align-items: center;
+    }
     .badges, .pills, .toc { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
     .badge, .pill, .toc a {
       display: inline-flex;
@@ -460,6 +489,37 @@ def _hero(title: str, subtitle: str, badges: Iterable[str], *, pills: Iterable[s
     badge_html = ''.join([f"<span class='badge'>{escape(x)}</span>" for x in badges])
     pill_html = ''.join([f"<span class='pill'>{escape(x)}</span>" for x in pills])
     return f"<div class='hero'><h1>{escape(title)}</h1><p>{escape(subtitle)}</p><div class='badges'>{badge_html}</div><div class='pills'>{pill_html}</div></div>"
+
+
+def _home_identity_strip(lang: str) -> str:
+    docs_label = _tr(lang, "Docs", "Docs")
+    repo_label = _tr(lang, "Repo", "Repo")
+    license_label = _tr(lang, "MIT", "MIT")
+    python_label = _tr(lang, "Python 3.10+", "Python 3.10+")
+    built_text = _tr(
+        lang,
+        "Built by Zipeng Wu (zxw365@student.bham.ac.uk) at The University of Birmingham.",
+        "由 Zipeng Wu（zxw365@student.bham.ac.uk）构建，来自 The University of Birmingham。",
+    )
+    return (
+        "<div class='hero-meta'>"
+        "<div class='badge-links'>"
+        "<a href='https://zipengwu365.github.io/TSDataForge/'><img alt='Docs' src='https://img.shields.io/badge/docs-GitHub%20Pages-0b57d0'></a>"
+        "<a href='https://github.com/ZipengWu365/TSDataForge'><img alt='Repo' src='https://img.shields.io/badge/repo-TSDataForge-111827'></a>"
+        "<a href='https://github.com/ZipengWu365/TSDataForge/blob/main/LICENSE'><img alt='License: MIT' src='https://img.shields.io/badge/license-MIT-16a34a'></a>"
+        "<span title='" + escape(python_label) + "'><img alt='Python 3.10+' src='https://img.shields.io/badge/python-3.10%2B-2563eb'></span>"
+        "</div>"
+        "<div class='hero-meta-line'>"
+        "<a href='https://www.birmingham.ac.uk/'>"
+        "<img src='https://www.birmingham.ac.uk/_s1t51Q_30649ea7-7b67-4dd9-9d18-4db7fd5c8933/static/img/icons/favicon-32x32.png' alt='University of Birmingham' width='18' height='18'>"
+        "</a>"
+        f"<span>{escape(built_text)}</span>"
+        "</div>"
+        "<div class='hero-meta-line'>"
+        f"<small><a href='https://zipengwu365.github.io/TSDataForge/'>{escape(docs_label)}</a> · <a href='https://github.com/ZipengWu365/TSDataForge'>{escape(repo_label)}</a> · <a href='mailto:zxw365@student.bham.ac.uk'>zxw365@student.bham.ac.uk</a> · <a href='https://github.com/ZipengWu365/TSDataForge/blob/main/LICENSE'>{escape(license_label)}</a></small>"
+        "</div>"
+        "</div>"
+    )
 
 
 
@@ -995,6 +1055,7 @@ def _index_page(lang: str, catalog: list[ExampleRecipe], tutorials: list[Tutoria
         ['dataset reports', 'handoff bundles', 'agent-ready assets', 'real public demos', 'schema-first'],
         pills=[f'{len(catalog)} examples', f'{len(tutorials)} tutorial tracks', f'{api_ref.n_symbols} public symbols'],
     )
+    body += _home_identity_strip(lang)
     body += _toc([
         ('what', _tr(lang, 'What the package is', '这个包到底是干什么的')),
         ('why', _tr(lang, 'Why it exists', '为什么会有这个包')),

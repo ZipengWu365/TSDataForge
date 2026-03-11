@@ -23,6 +23,7 @@ def test_docs_site_has_english_root_and_chinese_mirror(tmp_path: Path):
     index = (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
     zh_index = (tmp_path / "site" / "zh" / "index.html").read_text(encoding="utf-8")
     assert "Quickstart" in index
+    assert "zxw365@student.bham.ac.uk" in index
     assert "中文" in index
     assert "English" in zh_index
     assert "href='../index.html'" in zh_index

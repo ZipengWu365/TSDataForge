@@ -48,6 +48,9 @@ def test_docs_site_explains_package_and_routes_by_scenario(tmp_path: Path):
     assert "What TSDataForge is" in index_html
     assert "What it is not" in index_html
     assert "Which environment should I use" in index_html
+    assert "Zipeng Wu" in index_html
+    assert "zxw365@student.bham.ac.uk" in index_html
+    assert "University of Birmingham" in index_html
     assert "Which APIs matter in which scenario" in api_html
     assert "What is TSDataForge actually for?" in faq_html
     assert "What people actually use the package for" in use_cases_html

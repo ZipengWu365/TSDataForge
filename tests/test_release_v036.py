@@ -67,6 +67,8 @@ def test_readme_mentions_real_world_scenarios_and_open_order():
     assert "Public climate CO2" in readme
     assert "https://zipengwu365.github.io/TSDataForge/" in readme
     assert "University of Birmingham" in readme
+    assert "zxw365@student.bham.ac.uk" in readme
+    assert "license-MIT" in readme
     assert "Open these files in this order" in readme
     assert "agent open order" in handoff_md.lower()
     assert "30-second path" in quickstart

@@ -5,13 +5,23 @@
 <p align="left">
   <a href="https://zipengwu365.github.io/TSDataForge/"><img alt="Docs" src="https://img.shields.io/badge/docs-GitHub%20Pages-0b57d0"></a>
   <a href="https://github.com/ZipengWu365/TSDataForge"><img alt="GitHub" src="https://img.shields.io/badge/repo-TSDataForge-111827"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-16a34a"></a>
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-2563eb">
 </p>
 
 <p align="left">
   <a href="https://www.birmingham.ac.uk/">
     <img src="https://www.birmingham.ac.uk/_s1t51Q_30649ea7-7b67-4dd9-9d18-4db7fd5c8933/static/img/icons/favicon-32x32.png" alt="University of Birmingham" width="18" height="18">
   </a>
-  Built by <strong>Zipeng Wu</strong> at the <a href="https://www.birmingham.ac.uk/">University of Birmingham</a>.
+  Built by <strong>Zipeng Wu</strong> (<a href="mailto:zxw365@student.bham.ac.uk">zxw365@student.bham.ac.uk</a>) at <strong>The University of Birmingham</strong>.
+</p>
+
+<p align="left">
+  <sub>
+    <a href="https://www.birmingham.ac.uk/">University page</a> ·
+    <a href="https://github.com/ZipengWu365/TSDataForge">GitHub repo</a> ·
+    <a href="https://zipengwu365.github.io/TSDataForge/">Docs</a>
+  </sub>
 </p>
 
 TSDataForge is an **asset-first time-series library**.
