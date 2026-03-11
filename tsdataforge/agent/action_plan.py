@@ -20,9 +20,9 @@ class ActionPlanItem:
         return asdict(self)
 
     def to_markdown(self) -> str:
-        hint = f" — `{self.command_hint}`" if self.command_hint else ""
         target = f" (`{self.target}`)" if self.target else ""
-        return f"- **{self.status}** · `{self.action_id}` · {self.title}{target}{hint}. {self.rationale}"
+        hint = f" Hint: `{self.command_hint}`." if self.command_hint else ""
+        return f"- **{self.status}** `{self.action_id}` {self.title}{target}. {self.rationale}{hint}"
 
 
 __all__ = ["ActionPlanItem"]

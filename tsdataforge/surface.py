@@ -7,6 +7,8 @@ from typing import Any
 
 import numpy as np
 
+from .agent.context import build_dataset_context
+from .agent.decision import build_dataset_decision_record
 from .agent.handoff import DatasetHandoffBundle, build_dataset_handoff_bundle
 from .datasets.builder import TaskDataset
 from .datasets.series_dataset import SeriesDataset
@@ -77,14 +79,14 @@ def public_surface(version: str = "0.3.7") -> PublicSurface:
             ),
             PublicEntrypoint(
                 "taskify",
-                'taskify(source, task=..., ...)',
+                "taskify(source, task=..., ...)",
                 "Derive a task-specific dataset only after the asset and report are clear.",
                 "TaskDataset",
                 "Taskification should come after understanding, not before it.",
             ),
             PublicEntrypoint(
                 "demo",
-                'demo(output_dir="demo_bundle", scenario=...)',
+                "demo(output_dir=\"demo_bundle\", scenario=...)",
                 "Generate a built-in demo asset and the full public handoff flow.",
                 "DatasetHandoffBundle",
                 "A credible project needs a copy-paste first success for GitHub, workshops, and agents.",
@@ -127,16 +129,22 @@ def report(
     dataset_id: str | None = None,
     channel_names: list[str] | None = None,
 ) -> EDAReport:
-    asset = source if isinstance(source, (SeriesDataset, TaskDataset, GeneratedSeries)) else coerce_asset(source, time, dataset_id=dataset_id, channel_names=channel_names)
+    asset = (
+        source
+        if isinstance(source, (SeriesDataset, TaskDataset, GeneratedSeries))
+        else coerce_asset(source, time, dataset_id=dataset_id, channel_names=channel_names)
+    )
     if isinstance(asset, TaskDataset):
         raise TypeError("`report()` expects a series or base dataset. Use `task.handoff(...)` or `handoff(task_dataset, ...)` for task assets.")
     if isinstance(asset, SeriesDataset):
+        decision = build_dataset_decision_record(build_dataset_context(asset, budget="small"))
         return generate_dataset_eda_report(
             asset.values_list(),
             asset.time_list(),
-            title=title or f"TSDataForge Dataset Report — {asset.dataset_id}",
+            title=title or f"TSDataForge Dataset Report - {asset.dataset_id}",
             output_path=output_path,
             docs_base_url=docs_base_url,
+            decision_record=decision.to_dict(),
         )
     return generate_eda_report(
         asset,
@@ -161,7 +169,7 @@ def handoff(
     dataset_id: str | None = None,
 ) -> DatasetHandoffBundle:
     asset = source if isinstance(source, (SeriesDataset, TaskDataset)) else coerce_asset(source, time, dataset_id=dataset_id)
-    bundle = build_dataset_handoff_bundle(
+    return build_dataset_handoff_bundle(
         asset,
         output_dir=output_dir,
         goal=goal,
@@ -170,7 +178,6 @@ def handoff(
         include_source_asset=include_source_asset,
         include_schemas=include_schemas,
     )
-    return bundle
 
 
 def taskify(
@@ -208,7 +215,7 @@ def demo(
         seed=int(seed),
     )
     np.save(out / "demo_input.npy", base.values())
-    bundle = build_dataset_handoff_bundle(
+    return build_dataset_handoff_bundle(
         base,
         output_dir=out,
         include_report=True,
@@ -216,7 +223,6 @@ def demo(
         goal=f"demo the shortest TSDataForge dataset -> report -> handoff path ({scenario})",
         include_schemas=include_schemas,
     )
-    return bundle
 
 
 def launch_gui(

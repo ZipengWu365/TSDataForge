@@ -21,9 +21,11 @@ def test_load_report_handoff_and_taskify_with_arrays(tmp_path: Path):
     asset = load_asset(values, dataset_id="lab_values")
     rep = report(asset, output_path=tmp_path / "report.html")
     assert rep.output_path and rep.output_path.endswith("report.html")
+    assert "Decision summary" in rep.html
 
     bundle = handoff(asset, output_dir=tmp_path / "handoff_bundle", include_report=True, include_schemas=True)
     assert (tmp_path / "handoff_bundle" / "report.html").exists()
+    assert (tmp_path / "handoff_bundle" / "decision_record.json").exists()
     assert (tmp_path / "handoff_bundle" / "handoff_index_min.json").exists()
     assert (tmp_path / "handoff_bundle" / "action_plan.json").exists()
     assert (tmp_path / "handoff_bundle" / "schemas" / "handoff_index_min.schema.json").exists()
@@ -52,6 +54,7 @@ def test_build_artifact_schemas_catalog():
     assert ids == [
         "dataset_context",
         "dataset_card",
+        "decision_record",
         "handoff_index_min",
         "handoff_index",
         "action_plan",

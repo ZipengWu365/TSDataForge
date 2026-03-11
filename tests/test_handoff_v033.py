@@ -21,6 +21,7 @@ def test_build_dataset_handoff_bundle(tmp_path: Path):
     assert bundle.dataset_id.startswith("synthetic_")
     assert bundle.next_actions[0] == "open:report.html"
     assert (tmp_path / "bundle" / "report.html").exists()
+    assert (tmp_path / "bundle" / "decision_record.json").exists()
     assert (tmp_path / "bundle" / "dataset_card.md").exists()
     assert (tmp_path / "bundle" / "dataset_context.json").exists()
     assert (tmp_path / "bundle" / "handoff_bundle.json").exists()

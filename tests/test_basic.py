@@ -236,9 +236,20 @@ def test_dataset_eda_report_generation(tmp_path):
     rng = np.random.default_rng(0)
     X = rng.normal(size=(12, 64))
     out = tmp_path / "ds_report.html"
-    rep = generate_dataset_eda_report(X, output_path=out)
+    rep = generate_dataset_eda_report(
+        X,
+        output_path=out,
+        decision_record={
+            "summary": "Decision logic is attached.",
+            "facts": [{"label": "Series count", "value": "12"}],
+            "risks": [{"title": "Missingness should be reviewed", "severity": "medium", "rationale": "Synthetic smoke test."}],
+            "candidate_tasks": [{"task": "forecasting", "score": 0.74, "rationale": "Trend signal is visible."}],
+            "recommended_next_step": {"title": "Taskify into `forecasting`", "rationale": "Trend signal is visible.", "confidence": 0.74},
+        },
+    )
     assert out.exists()
     assert "Dataset" in rep.html or "dataset" in rep.html.lower()
+    assert "Decision summary" in rep.html
 
 
 def test_wrap_external_series_creates_trace():

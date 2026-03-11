@@ -231,6 +231,87 @@ def _render_resource_hub_card(resource_hub: Any | None) -> str:
     )
 
 
+def _render_decision_summary_card(decision_record: Any | None) -> str:
+    if not isinstance(decision_record, dict):
+        return ""
+    summary = str(decision_record.get("summary") or "").strip()
+    facts = list(decision_record.get("facts") or [])
+    risks = list(decision_record.get("risks") or [])
+    candidate_tasks = list(decision_record.get("candidate_tasks") or [])
+    next_step = decision_record.get("recommended_next_step") or {}
+
+    fact_rows: list[str] = []
+    for item in facts[:6]:
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get("label") or item.get("fact_id") or "Fact")
+        value = str(item.get("value") or "n/a")
+        fact_rows.append(f"<tr><td>{_escape_html(label)}</td><td>{_escape_html(value)}</td></tr>")
+    facts_html = (
+        "<table class='table'><thead><tr><th>Fact</th><th>Value</th></tr></thead><tbody>"
+        + "".join(fact_rows)
+        + "</tbody></table>"
+        if fact_rows
+        else "<p class='muted'>No key facts were attached.</p>"
+    )
+
+    risk_items = []
+    for item in risks[:3]:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title") or item.get("risk_id") or "Risk")
+        rationale = str(item.get("rationale") or "")
+        severity = str(item.get("severity") or "risk")
+        risk_items.append(f"<li><strong>{_escape_html(severity.title())}:</strong> {_escape_html(title)}. {_escape_html(rationale)}</li>")
+    risks_html = "<ul>" + "".join(risk_items) + "</ul>" if risk_items else "<p class='muted'>No major blockers were detected.</p>"
+
+    task_rows = []
+    for item in candidate_tasks[:3]:
+        if not isinstance(item, dict):
+            continue
+        task = str(item.get("task") or "task")
+        score = _format_value(item.get("score"), key="score")
+        rationale = str(item.get("rationale") or "")
+        task_rows.append(f"<tr><td><span class='badge'>{_escape_html(task)}</span></td><td>{_escape_html(score)}</td><td>{_escape_html(rationale)}</td></tr>")
+    tasks_html = (
+        "<table class='table'><thead><tr><th>Task</th><th>Score</th><th>Why</th></tr></thead><tbody>"
+        + "".join(task_rows)
+        + "</tbody></table>"
+        if task_rows
+        else "<p class='muted'>No candidate task list was attached.</p>"
+    )
+
+    next_step_html = "<p class='muted'>No single next step was attached.</p>"
+    if isinstance(next_step, dict) and next_step:
+        title = str(next_step.get("title") or next_step.get("action_id") or "Next step")
+        rationale = str(next_step.get("rationale") or "")
+        confidence = next_step.get("confidence")
+        confidence_text = ""
+        if confidence is not None:
+            confidence_text = f" (confidence {_escape_html(_format_value(confidence, key='score'))})"
+        hint = str(next_step.get("command_hint") or "")
+        hint_html = f"<p class='small'><strong>Hint:</strong> <code>{_escape_html(hint)}</code></p>" if hint else ""
+        next_step_html = (
+            f"<p><strong>{_escape_html(title)}</strong>{confidence_text}</p>"
+            f"<p class='muted'>{_escape_html(rationale)}</p>"
+            + hint_html
+        )
+
+    summary_html = f"<p class='muted'>{_escape_html(summary)}</p>" if summary else ""
+    return (
+        "<div class='card'><h2>Decision summary</h2>"
+        + summary_html
+        + next_step_html
+        + "<div class='link-grid'>"
+        + "<div><h3>Key facts</h3>" + facts_html + "</div>"
+        + "<div><h3>Main risks</h3>" + risks_html + "</div>"
+        + "</div>"
+        + "<h3>Candidate tasks</h3>"
+        + tasks_html
+        + "</div>"
+    )
+
+
 def _render_series_report(
     desc: SeriesDescription,
     expl: SeriesExplanation,
@@ -442,6 +523,7 @@ def _render_dataset_report(
     *,
     title: str,
     resource_hub: Any | None,
+    decision_record: Any | None,
 ) -> str:
     plot_blocks: list[str] = []
     plot_errors: list[str] = []
@@ -508,6 +590,11 @@ def _render_dataset_report(
         "Raw dataset description (JSON)",
         f"<pre><code>{_escape_html(_json_pretty(ddesc.to_dict()))}</code></pre>",
     )
+    if decision_record is not None:
+        appendix_html += _details_block(
+            "Decision record (JSON)",
+            f"<pre><code>{_escape_html(_json_pretty(decision_record))}</code></pre>",
+        )
 
     html = f"""
     <div class='container'>
@@ -528,6 +615,8 @@ def _render_dataset_report(
           {''.join([f"<li>{_escape_html(b)}</li>" for b in bullets])}
         </ul>
       </div>
+
+      {_render_decision_summary_card(decision_record)}
 
       {_render_resource_hub_card(resource_hub)}
 
@@ -700,18 +789,23 @@ def generate_dataset_eda_report(
     seed: int = 0,
     docs_base_url: str | None = None,
     include_linked_resources: bool = True,
+    decision_record: Any | None = None,
 ) -> EDAReport:
     """Generate a dataset-level EDA report (HTML)."""
 
     ddesc = describe_dataset(values, time, max_series=max_series, seed=seed)
     resource_hub = build_eda_resource_hub(ddesc, docs_base_url=docs_base_url) if include_linked_resources else None
-    body = _render_dataset_report(ddesc, title=title, resource_hub=resource_hub)
+    body = _render_dataset_report(ddesc, title=title, resource_hub=resource_hub, decision_record=decision_record)
     full = f"<!doctype html><html><head><meta charset='utf-8'/><meta name='viewport' content='width=device-width, initial-scale=1'/><title>{_escape_html(title)}</title><style>{_CSS}</style></head><body>{body}</body></html>"
     report = EDAReport(
         html=full,
         output_path=None,
         kind="dataset",
-        summary={"dataset_description": ddesc.to_dict(), "resource_hub": resource_hub.to_dict() if resource_hub is not None else None},
+        summary={
+            "dataset_description": ddesc.to_dict(),
+            "resource_hub": resource_hub.to_dict() if resource_hub is not None else None,
+            "decision_record": decision_record,
+        },
         resource_hub=resource_hub,
     )
     if output_path is not None:

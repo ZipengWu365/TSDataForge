@@ -8,6 +8,15 @@ from .context import (
     render_context_markdown,
 )
 from .cards import ArtifactCard, build_series_dataset_card, build_task_dataset_card, save_card
+from .decision import (
+    CandidateTaskDecision,
+    DecisionFact,
+    DecisionRecord,
+    DecisionRisk,
+    RecommendedNextStep,
+    build_dataset_decision_record,
+    build_task_decision_record,
+)
 from .handoff import (
     DatasetHandoffBundle,
     HandoffArtifact,
@@ -72,7 +81,11 @@ __all__ = [
     "ActionPlanItem",
     "AgentContextPack",
     "ArtifactCard",
+    "CandidateTaskDecision",
     "DatasetHandoffBundle",
+    "DecisionFact",
+    "DecisionRecord",
+    "DecisionRisk",
     "HandoffArtifact",
     "HandoffIndex",
     "DocsSiteResult",
@@ -89,7 +102,9 @@ __all__ = [
     "build_task_context",
     "render_context_markdown",
     "build_series_dataset_card",
+    "build_dataset_decision_record",
     "build_dataset_handoff_bundle",
+    "build_task_decision_record",
     "build_task_dataset_card",
     "render_dataset_handoff_markdown",
     "render_handoff_index_markdown",
@@ -132,6 +147,7 @@ __all__ = [
     "APISymbol",
     "PackageProfile",
     "PositioningMatrix",
+    "RecommendedNextStep",
     "competitor_catalog",
     "build_positioning_matrix",
     "render_positioning_markdown",

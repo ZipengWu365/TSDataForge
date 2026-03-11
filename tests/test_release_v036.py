@@ -46,7 +46,7 @@ def test_cli_help_and_demo_summary_are_clean(tmp_path: Path, capsys):
     payload = json.loads(stdout)
     assert payload["agent_entrypoint"] == "handoff_index_min.json"
     assert payload["human_open_order"][0] == "report.html"
-    assert payload["agent_open_order"][0] == "dataset_context.json"
+    assert payload["agent_open_order"][0] == "decision_record.json"
     assert payload["recommended_next_step"]
 
 

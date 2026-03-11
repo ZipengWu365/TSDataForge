@@ -10,6 +10,7 @@ from ..datasets.series_dataset import SeriesDataset
 from .action_plan import ActionPlanItem
 from .cards import ArtifactCard, build_series_dataset_card, build_task_dataset_card
 from .context import AgentContextPack, build_dataset_context, build_task_context
+from .decision import DecisionRecord, build_dataset_decision_record, build_task_decision_record
 from .schemas import build_artifact_schemas, save_artifact_schemas
 from .tool_contracts import build_tool_contracts, save_tool_contracts
 
@@ -34,13 +35,7 @@ class HandoffArtifact:
 
 @dataclass(frozen=True)
 class HandoffIndex:
-    """Compact, explicit first-entry contract for bundle consumers.
-
-    The object can render multiple layers:
-    - ``handoff_index_min`` for the smallest possible agent-first entrypoint
-    - ``handoff_index`` for a still-compact but more human-readable routing map
-    - ``action_plan`` for detailed already_done / recommended / optional steps
-    """
+    """Compact, explicit first-entry contract for bundle consumers."""
 
     kind: str
     dataset_id: str
@@ -60,6 +55,11 @@ class HandoffIndex:
     first_non_open_action: str | None = None
     recommended_next_step: str | None = None
     why_recommended: str | None = None
+    decision_path: str | None = None
+    decision_summary: str | None = None
+    main_risks: list[str] = field(default_factory=list)
+    top_candidate_tasks: list[str] = field(default_factory=list)
+    decision_confidence: float | None = None
     already_done_actions: list[str] = field(default_factory=list)
     recommended_prompt: str = (
         "Open handoff_index_min.json first. Then follow agent_open_order. Do not open handoff_bundle.json unless a required field is missing."
@@ -83,19 +83,23 @@ class HandoffIndex:
             "agent_open_order": list(self.agent_open_order),
             "recommended_next_step": self.recommended_next_step,
             "why_recommended": self.why_recommended,
+            "decision_path": self.decision_path,
+            "decision_summary": self.decision_summary,
+            "main_risks": list(self.main_risks[:2]),
+            "top_candidate_tasks": list(self.top_candidate_tasks[:3]),
+            "decision_confidence": self.decision_confidence,
             "action_plan_path": self.artifact_paths.get("action_plan.json", "action_plan.json"),
             "recommended_prompt": self.recommended_prompt,
         }
 
     def to_dict(self) -> dict[str, Any]:
-        primary_open_order = list(self.primary_open_order or self.human_open_order)
         return {
             "kind": self.kind,
             "dataset_id": self.dataset_id,
             "title": self.title,
             "summary": self.summary,
             "wow_sentence": self.wow_sentence,
-            "primary_open_order": primary_open_order,
+            "primary_open_order": list(self.primary_open_order or self.human_open_order),
             "human_open_order": list(self.human_open_order),
             "agent_entrypoint": "handoff_index_min.json",
             "agent_open_order": list(self.agent_open_order),
@@ -106,6 +110,11 @@ class HandoffIndex:
             "docs_index": self.docs_index,
             "recommended_next_step": self.recommended_next_step,
             "why_recommended": self.why_recommended,
+            "decision_path": self.decision_path,
+            "decision_summary": self.decision_summary,
+            "main_risks": list(self.main_risks),
+            "top_candidate_tasks": list(self.top_candidate_tasks),
+            "decision_confidence": self.decision_confidence,
             "recommended_prompt": self.recommended_prompt,
             "action_status_counts": self.action_status_counts(),
         }
@@ -117,6 +126,7 @@ class HandoffIndex:
             "recommended_next_step": self.recommended_next_step,
             "already_done_actions": list(self.already_done_actions),
             "action_status_counts": self.action_status_counts(),
+            "decision_path": self.decision_path,
             "action_plan": list(self.action_plan),
         }
 
@@ -136,19 +146,15 @@ class HandoffIndex:
         if self.agent_open_order:
             for name in self.agent_open_order:
                 target = self.artifact_paths.get(name, name)
-                lines.append(f"- `{name}` → `{target}`")
+                lines.append(f"- `{name}` -> `{target}`")
         else:
             lines.append("- No additional artifacts after `handoff_index_min.json`.")
-        lines.extend([
-            "",
-            "## Single recommended next step",
-            "",
-        ])
+        lines.extend(["", "## Single recommended next step", ""])
         if self.recommended_next_step:
             lines.append(f"- `{self.recommended_next_step}`")
             if self.why_recommended:
                 lines.append(f"  - {self.why_recommended}")
-            lines.append(f"  - See `action_plan.json` for the full already_done / recommended / optional breakdown.")
+            lines.append("  - See `action_plan.json` for the full already_done / recommended / optional breakdown.")
         else:
             lines.append("- none")
         lines.extend(["", "## Agent hint", "", self.recommended_prompt, ""])
@@ -168,36 +174,24 @@ class HandoffIndex:
         if self.human_open_order:
             for name in self.human_open_order:
                 target = self.artifact_paths.get(name, name)
-                lines.append(f"- `{name}` → `{target}`")
+                lines.append(f"- `{name}` -> `{target}`")
         else:
             lines.append("- No saved artifacts yet.")
-        lines.extend([
-            "",
-            "## Open these first (agent)",
-            "",
-        ])
+        lines.extend(["", "## Open these first (agent)", ""])
         if self.agent_open_order:
             for name in self.agent_open_order:
                 target = self.artifact_paths.get(name, name)
-                lines.append(f"- `{name}` → `{target}`")
+                lines.append(f"- `{name}` -> `{target}`")
         else:
             lines.append("- No additional artifacts after `handoff_index_min.json`.")
-        lines.extend([
-            "",
-            "## Recommended next step",
-            "",
-        ])
+        lines.extend(["", "## Recommended next step", ""])
         if self.recommended_next_step:
             lines.append(f"- `{self.recommended_next_step}`")
             if self.why_recommended:
                 lines.append(f"  - {self.why_recommended}")
         else:
             lines.append("- none")
-        lines.extend([
-            "",
-            "## Action plan summary",
-            "",
-        ])
+        lines.extend(["", "## Action plan summary", ""])
         counts = self.action_status_counts()
         if counts:
             for key in sorted(counts):
@@ -206,6 +200,7 @@ class HandoffIndex:
             lines.append("- none")
         lines.extend(["", "## Agent hint", "", self.recommended_prompt, ""])
         return "\n".join(lines).strip() + "\n"
+
 
 @dataclass
 class DatasetHandoffBundle:
@@ -220,24 +215,23 @@ class DatasetHandoffBundle:
     next_actions: list[str]
     manifest: dict[str, Any]
     report: dict[str, Any] | None = None
+    decision: DecisionRecord | None = None
     artifacts: list[HandoffArtifact] = field(default_factory=list)
     action_plan: list[ActionPlanItem] = field(default_factory=list)
     output_dir: str | None = None
     index: HandoffIndex | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        artifact_names = [item.name for item in self.artifacts]
-        open_order = list(self.index.human_open_order) if self.index is not None else []
         payload = {
             "kind": self.kind,
             "dataset_id": self.dataset_id,
             "title": self.title,
             "summary": self.summary,
-            "open_order": open_order,
+            "open_order": list(self.index.human_open_order) if self.index is not None else [],
             "next_actions": list(self.next_actions),
             "manifest": dict(self.manifest),
             "artifacts": [item.to_dict() for item in self.artifacts],
-            "artifact_names": artifact_names,
+            "artifact_names": [item.name for item in self.artifacts],
             "output_dir": self.output_dir,
             "action_plan": [item.to_dict() for item in self.action_plan],
             "context_preview": {
@@ -254,6 +248,8 @@ class DatasetHandoffBundle:
         }
         if self.index is not None:
             payload["handoff_index"] = self.index.to_dict()
+        if self.decision is not None:
+            payload["decision_record"] = self.decision.to_dict()
         if self.report is not None and isinstance(self.report, dict):
             payload["report_preview"] = {
                 "title": self.report.get("title"),
@@ -264,32 +260,23 @@ class DatasetHandoffBundle:
 
     def to_markdown(self) -> str:
         lines = [f"# {self.title}", "", self.summary, ""]
+        if self.decision is not None:
+            lines.extend(["## Decision summary", "", self.decision.summary, ""])
+            if self.decision.risks:
+                for item in self.decision.risks[:3]:
+                    lines.append(f"- Risk: {item.title}")
+                lines.append("")
         if self.index is not None:
-            lines.extend([
-                "> " + self.index.wow_sentence,
-                "",
-                "## Open these first (human)",
-                "",
-            ])
+            lines.extend(["> " + self.index.wow_sentence, "", "## Open these first (human)", ""])
             for name in self.index.human_open_order:
                 target = self.index.artifact_paths.get(name, name)
                 description = next((item.description for item in self.artifacts if item.name == name), "")
-                if description:
-                    lines.append(f"- `{name}` — {description} (`{target}`)")
-                else:
-                    lines.append(f"- `{name}` (`{target}`)")
-            lines.extend([
-                "",
-                "## Open these first (agent)",
-                "",
-            ])
+                lines.append(f"- `{name}` - {description} (`{target}`)" if description else f"- `{name}` (`{target}`)")
+            lines.extend(["", "## Open these first (agent)", ""])
             for name in self.index.agent_open_order:
                 target = self.index.artifact_paths.get(name, name)
                 description = next((item.description for item in self.artifacts if item.name == name), "")
-                if description:
-                    lines.append(f"- `{name}` — {description} (`{target}`)")
-                else:
-                    lines.append(f"- `{name}` (`{target}`)")
+                lines.append(f"- `{name}` - {description} (`{target}`)" if description else f"- `{name}` (`{target}`)")
         else:
             lines.extend(["## What to open first", "", "- No saved artifacts yet."])
         lines.extend(["", "## Recommended next actions", ""])
@@ -302,18 +289,20 @@ class DatasetHandoffBundle:
             lines.extend([item.to_markdown() for item in self.action_plan])
         else:
             lines.append("- none")
-        lines.extend([
-            "",
-            "## Why this bundle exists",
-            "",
-            "This bundle packages the smallest set of artifacts that let a human or an agent understand a time-series dataset asset without reopening notebooks or pasting raw arrays.",
-            "",
-            "## Artifact inventory",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Why this bundle exists",
+                "",
+                "This bundle packages the smallest set of artifacts that let a human or an agent understand a time-series dataset asset without reopening notebooks or pasting raw arrays.",
+                "",
+                "## Artifact inventory",
+                "",
+            ]
+        )
         if self.artifacts:
             for item in self.artifacts:
-                lines.append(f"- `{item.name}` ({item.kind}) — {item.description}")
+                lines.append(f"- `{item.name}` ({item.kind}) - {item.description}")
         else:
             lines.append("- none")
         if self.index is not None:
@@ -326,12 +315,14 @@ class DatasetHandoffBundle:
         (out / "handoff_bundle.json").write_text(json.dumps(self.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
         markdown = self.to_markdown()
         (out / "handoff_bundle.md").write_text(markdown, encoding="utf-8")
+        if self.decision is not None:
+            (out / "decision_record.json").write_text(json.dumps(self.decision.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+            (out / "decision_record.md").write_text(self.decision.to_markdown(), encoding="utf-8")
         if self.index is not None:
             (out / "handoff_index_min.json").write_text(json.dumps(self.index.to_min_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
             (out / "handoff_index_min.md").write_text(self.index.to_min_markdown(), encoding="utf-8")
             (out / "handoff_index.json").write_text(json.dumps(self.index.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
-            index_markdown = self.index.to_markdown()
-            (out / "handoff_index.md").write_text(index_markdown, encoding="utf-8")
+            (out / "handoff_index.md").write_text(self.index.to_markdown(), encoding="utf-8")
             (out / "action_plan.json").write_text(json.dumps(self.index.to_action_plan_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
             (out / "action_plan.md").write_text(_render_action_plan_markdown(self.index), encoding="utf-8")
             (out / "README.md").write_text(self.index.to_min_markdown(), encoding="utf-8")
@@ -347,23 +338,22 @@ WOW_TASK = "Give TSDataForge one task dataset and it returns a compact handoff s
 
 def _render_action_plan_markdown(index: HandoffIndex) -> str:
     lines = [
-        f"# Action plan — {index.title}",
+        f"# Action plan - {index.title}",
         "",
         f"Recommended next step: `{index.recommended_next_step}`" if index.recommended_next_step else "Recommended next step: none",
         "",
     ]
     counts = index.action_status_counts()
     if counts:
-        lines.append("## Status counts")
-        lines.append("")
+        lines.extend(["## Status counts", ""])
         for key in sorted(counts):
             lines.append(f"- `{key}`: {counts[key]}")
         lines.append("")
     lines.extend(["## Actions", ""])
     if index.action_plan:
         for item in index.action_plan:
-            lines.append(f"- **{item.get('status', 'recommended')}** · `{item.get('action_id', 'action')}` · {item.get('title', '')}")
-            rationale = item.get('rationale')
+            lines.append(f"- **{item.get('status', 'recommended')}** `{item.get('action_id', 'action')}` - {item.get('title', '')}")
+            rationale = item.get("rationale")
             if rationale:
                 lines.append(f"  - {rationale}")
     else:
@@ -376,7 +366,12 @@ def _artifact(name: str, path: Path, kind: str, description: str) -> HandoffArti
     return HandoffArtifact(name=name, path=str(path), kind=kind, description=description)
 
 
-def _infer_dataset(values: SeriesDataset | TaskDataset | Any, time: Any | None, *, dataset_id: str | None = None) -> tuple[str, SeriesDataset | TaskDataset]:
+def _infer_dataset(
+    values: SeriesDataset | TaskDataset | Any,
+    time: Any | None,
+    *,
+    dataset_id: str | None = None,
+) -> tuple[str, SeriesDataset | TaskDataset]:
     if isinstance(values, SeriesDataset):
         return "series_dataset", values
     if isinstance(values, TaskDataset):
@@ -394,110 +389,145 @@ def _task_handoff_summary(task: TaskDataset) -> str:
 
 
 def _series_open_orders(artifact_paths: dict[str, str]) -> tuple[list[str], list[str], str | None, str | None, str | None]:
-    human = [name for name in ("report.html", "dataset_card.md", "dataset_context.json") if name in artifact_paths]
-    agent = [name for name in ("dataset_context.json", "dataset_card.md", "report.html") if name in artifact_paths]
+    human = [name for name in ("report.html", "decision_record.md", "dataset_card.md", "dataset_context.json") if name in artifact_paths]
+    agent = [name for name in ("decision_record.json", "dataset_context.json", "dataset_card.md", "report.html") if name in artifact_paths]
     return human, agent, artifact_paths.get("report.html"), artifact_paths.get("dataset_card.md"), artifact_paths.get("dataset_context.json")
 
 
 def _task_open_orders(artifact_paths: dict[str, str]) -> tuple[list[str], list[str], str | None, str | None, str | None]:
-    human = [name for name in ("task_card.md", "task_context.json", "handoff_bundle.md") if name in artifact_paths]
-    agent = [name for name in ("task_context.json", "task_card.md") if name in artifact_paths]
+    human = [name for name in ("task_card.md", "decision_record.md", "task_context.json", "handoff_bundle.md") if name in artifact_paths]
+    agent = [name for name in ("decision_record.json", "task_context.json", "task_card.md") if name in artifact_paths]
     return human, agent, artifact_paths.get("report.html"), artifact_paths.get("task_card.md"), artifact_paths.get("task_context.json")
 
 
 def _compose_next_actions(kind: str, artifact_paths: dict[str, str], action_plan: list[ActionPlanItem]) -> list[str]:
-    if kind == "task_dataset":
-        human_open_order, _, _, _, _ = _task_open_orders(artifact_paths)
+    if artifact_paths:
+        if kind == "task_dataset":
+            human_open_order, _, _, _, _ = _task_open_orders(artifact_paths)
+        else:
+            human_open_order, _, _, _, _ = _series_open_orders(artifact_paths)
+        open_steps = [f"open:{name}" for name in human_open_order]
     else:
-        human_open_order, _, _, _, _ = _series_open_orders(artifact_paths)
-    open_steps = [f"open:{name}" for name in human_open_order]
+        open_steps = []
     follow_ups = [item.action_id for item in action_plan if item.status != "already_done"]
     return open_steps + follow_ups
 
 
-def _dataset_quality_flags(context: AgentContextPack) -> dict[str, Any]:
+def _task_action_plan_from_decision(
+    context: AgentContextPack,
+    *,
+    include_schemas: bool,
+    decision: DecisionRecord | None,
+) -> list[ActionPlanItem]:
     compact = dict(context.compact)
-    top_tags = [item.get("tag", item) if isinstance(item, dict) else item for item in compact.get("top_tags", compact.get("tags", []))]
-    dataset_id = str(compact.get("dataset_id") or "")
-    goal = str(compact.get("goal") or getattr(context, "goal", None) or "")
-    return {
-        "recommended_tasks": list(compact.get("recommended_tasks", [])),
-        "missing_rate_mean": float(compact.get("missing_rate_mean") or 0.0),
-        "dt_cv_mean": float(compact.get("dt_cv_mean") or 0.0),
-        "top_tags": [str(item) for item in top_tags],
-        "has_trace": bool(compact.get("has_trace")),
-        "dataset_id": dataset_id,
-        "goal": goal,
-    }
+    task = str(compact.get("task", "task"))
+    next_step = decision.recommended_next_step if decision is not None else None
+    actions: list[ActionPlanItem] = [
+        ActionPlanItem(
+            action_id="done:save_task_card",
+            title="Saved the task card",
+            kind="save",
+            status="already_done",
+            rationale="The task card is already present and should be the human-readable transfer summary.",
+            target="task_card.md",
+            related_artifacts=("task_card.md", "task_card.json"),
+        ),
+        ActionPlanItem(
+            action_id="done:save_task_context",
+            title="Saved the compact task context",
+            kind="save",
+            status="already_done",
+            rationale="The task context is already present and should be the low-token machine interface.",
+            target="task_context.json",
+            related_artifacts=("task_context.json", "task_context.md"),
+        ),
+        ActionPlanItem(
+            action_id="done:save_handoff_index",
+            title="Saved the first-entry handoff index",
+            kind="save",
+            status="already_done",
+            rationale="The minimal index is already present and is the intended first stop for an agent.",
+            target="handoff_index_min.json",
+            related_artifacts=("handoff_index_min.json", "handoff_index_min.md", "handoff_index.json", "handoff_index.md"),
+        ),
+        ActionPlanItem(
+            action_id="done:save_decision_record",
+            title="Saved the explicit decision record",
+            kind="save",
+            status="already_done",
+            rationale="The bundle already contains a structured decision record, so humans and agents can inspect why one move comes first.",
+            target="decision_record.json",
+            related_artifacts=("decision_record.json", "decision_record.md"),
+        ),
+    ]
+    if include_schemas:
+        actions.append(
+            ActionPlanItem(
+                action_id="done:save_schemas",
+                title="Saved artifact schemas",
+                kind="save",
+                status="already_done",
+                rationale="Schema contracts are already bundled for downstream tooling and validation.",
+                target="schemas/",
+                related_artifacts=("schemas/",),
+            )
+        )
+    if next_step is not None:
+        actions.append(
+            ActionPlanItem(
+                action_id=next_step.action_id,
+                title=next_step.title,
+                kind=next_step.kind,
+                status="recommended",
+                rationale=next_step.rationale,
+                trigger="recommended by the decision record",
+                command_hint=next_step.command_hint,
+                related_artifacts=("decision_record.json", "task_context.json", "task_card.md"),
+            )
+        )
+    else:
+        actions.append(
+            ActionPlanItem(
+                action_id="review:schema",
+                title="Inspect the task schema before modeling",
+                kind="review",
+                status="recommended",
+                rationale=f"`{task}` is already taskified, so the most useful next step is to verify X/y semantics, masks, and aux keys before training.",
+                trigger="always",
+                command_hint="open task_context.json and task_card.md before loading raw arrays",
+                related_artifacts=("task_context.json", "task_card.md"),
+            )
+        )
+    actions.append(
+        ActionPlanItem(
+            action_id="train:baseline",
+            title="Train or evaluate a baseline on the task dataset",
+            kind="run",
+            status="optional",
+            rationale="Once the schema is understood, this task artifact is ready for model code or agent orchestration.",
+            trigger="after schema review",
+            command_hint="see task-specific examples in examples/",
+            related_artifacts=("task_context.json", "decision_record.json"),
+        )
+    )
+    return actions
 
 
-def _task_quality_flags(context: AgentContextPack) -> dict[str, Any]:
-    compact = dict(context.compact)
-    return {
-        "task": str(compact.get("task", "task")),
-        "aux_keys": list(compact.get("aux_keys", [])),
-        "mask_keys": list(compact.get("mask_keys", [])),
-    }
-
-
-def _choose_recommended_task(flags: dict[str, Any]) -> str | None:
-    tasks = [str(item) for item in flags.get("recommended_tasks", [])]
-    if not tasks:
-        return None
-    task_set = set(tasks)
-    tags = {str(item) for item in flags.get("top_tags", [])}
-    dataset_id = str(flags.get("dataset_id", "")).lower()
-    goal = str(flags.get("goal", "")).lower()
-    text = f"{dataset_id} {goal}"
-
-    if any(key in text for key in ("ecg", "biosignal", "arrhythmia", "clinical", "bedside", "vital")):
-        for candidate in ("event_detection", "anomaly_detection", "masked_reconstruction", "forecasting"):
-            if candidate in task_set:
-                return candidate
-
-    if any(key in text for key in ("factory", "sensor", "drift", "maintenance")):
-        for candidate in ("anomaly_detection", "event_detection", "masked_reconstruction", "forecasting"):
-            if candidate in task_set:
-                return candidate
-
-    if any(key in text for key in ("macro", "inflation", "unemployment", "rates", "regime")):
-        for candidate in ("classification", "forecasting", "causal_response"):
-            if candidate in task_set:
-                return candidate
-
-    if any(key in text for key in ("climate", "co2", "sunspot", "weather", "precip", "temperature")):
-        for candidate in ("forecasting", "masked_reconstruction", "change_point_detection", "classification"):
-            if candidate in task_set:
-                return candidate
-
-    if "missing" in tags:
-        for candidate in ("masked_reconstruction", "anomaly_detection", "forecasting"):
-            if candidate in task_set:
-                return candidate
-
-    if "bursty" in tags:
-        for candidate in ("event_detection", "anomaly_detection", "forecasting"):
-            if candidate in task_set:
-                return candidate
-
-    if any(tag in tags for tag in ("regime", "piecewise", "chaotic")):
-        for candidate in ("classification", "forecasting", "causal_response"):
-            if candidate in task_set:
-                return candidate
-
-    return tasks[0]
-
-
-def _series_action_plan(
+def _series_action_plan_from_decision(
     context: AgentContextPack,
     *,
     include_report: bool,
     include_schemas: bool,
     include_docs_site: bool,
+    decision: DecisionRecord | None,
 ) -> list[ActionPlanItem]:
-    flags = _dataset_quality_flags(context)
-    tasks = [str(item) for item in flags.get("recommended_tasks", [])]
-    top_tags = ", ".join(flags.get("top_tags", [])[:3]) or "the dominant structure tags"
+    compact = dict(context.compact)
+    top_tags = compact.get("top_tags", compact.get("tags", []))
+    top_tag_text = ", ".join(
+        str(item.get("tag", item) if isinstance(item, dict) else item)
+        for item in list(top_tags)[:3]
+    ) or "the dominant structure tags"
+
     actions: list[ActionPlanItem] = []
     if include_report:
         actions.append(
@@ -540,6 +570,15 @@ def _series_action_plan(
                 target="handoff_index_min.json",
                 related_artifacts=("handoff_index_min.json", "handoff_index_min.md", "handoff_index.json", "handoff_index.md"),
             ),
+            ActionPlanItem(
+                action_id="done:save_decision_record",
+                title="Saved the explicit decision record",
+                kind="save",
+                status="already_done",
+                rationale="The bundle already contains a structured decision record, so humans and agents can inspect why one next step was chosen over another.",
+                target="decision_record.json",
+                related_artifacts=("decision_record.json", "decision_record.md"),
+            ),
         ]
     )
     if include_schemas:
@@ -567,44 +606,18 @@ def _series_action_plan(
             )
         )
 
-    recommended_task = _choose_recommended_task(flags)
-    if flags["missing_rate_mean"] >= 0.05:
+    next_step = decision.recommended_next_step if decision is not None else None
+    if next_step is not None:
         actions.append(
             ActionPlanItem(
-                action_id="review:missingness_strategy",
-                title="Review missingness and monitoring gaps before modeling",
-                kind="review",
+                action_id=next_step.action_id,
+                title=next_step.title,
+                kind=next_step.kind,
                 status="recommended",
-                rationale=f"Mean missing rate is about {flags['missing_rate_mean']:.3f}; decide masking, interpolation, or robust task routing before training.",
-                trigger="recommended when missingness is non-trivial",
-                command_hint="taskify(base, task='masked_reconstruction', ...) or document the imputation policy",
-                related_artifacts=("report.html", "dataset_context.json"),
-            )
-        )
-    elif flags["dt_cv_mean"] >= 0.10:
-        actions.append(
-            ActionPlanItem(
-                action_id="review:irregular_sampling_strategy",
-                title="Review irregular sampling before committing to a task",
-                kind="review",
-                status="recommended",
-                rationale=f"Sampling irregularity (dt_cv_mean≈{flags['dt_cv_mean']:.3f}) is large enough that the observation mechanism should be handled explicitly.",
-                trigger="recommended when irregular sampling dominates",
-                command_hint="document the observation policy or compare regular-vs-irregular task views",
-                related_artifacts=("report.html", "dataset_context.json"),
-            )
-        )
-    elif recommended_task is not None:
-        actions.append(
-            ActionPlanItem(
-                action_id=f"run:taskify:{recommended_task}",
-                title=f"Taskify into `{recommended_task}`",
-                kind="run",
-                status="recommended",
-                rationale=f"This is the top suggested task because the bundle is dominated by {top_tags}.",
-                trigger="recommended after the report is reviewed",
-                command_hint=f"taskify(base, task='{recommended_task}', ...)",
-                related_artifacts=("report.html", "dataset_context.json", "dataset_card.md"),
+                rationale=next_step.rationale,
+                trigger="recommended by the decision record",
+                command_hint=next_step.command_hint,
+                related_artifacts=("report.html", "decision_record.json", "dataset_context.json", "dataset_card.md"),
             )
         )
     else:
@@ -617,24 +630,25 @@ def _series_action_plan(
                 rationale="No single downstream task dominates, so the most useful next step is to interpret the report before taskifying.",
                 trigger="recommended when routing is ambiguous",
                 command_hint="open report.html and inspect the linked docs/examples/API suggestions",
-                related_artifacts=("report.html",),
+                related_artifacts=("report.html", "decision_record.json"),
             )
         )
 
-    for task in tasks[:3]:
-        action_id = f"run:taskify:{task}"
+    for candidate in list(decision.candidate_tasks if decision is not None else tuple())[:3]:
+        action_id = f"run:taskify:{candidate.task}"
         if any(item.action_id == action_id for item in actions):
             continue
+        blocked = f" Blocked by: {', '.join(candidate.blocked_by)}." if candidate.blocked_by else ""
         actions.append(
             ActionPlanItem(
                 action_id=action_id,
-                title=f"Taskify into `{task}`",
+                title=f"Taskify into `{candidate.task}`",
                 kind="run",
                 status="optional",
-                rationale=f"Alternative task route suggested by the compact context for the same asset ({top_tags}).",
+                rationale=f"Alternative task route for the same asset ({top_tag_text}). {candidate.rationale}.{blocked}".strip(),
                 trigger="use when the downstream objective is fixed",
-                command_hint=f"taskify(base, task='{task}', ...)",
-                related_artifacts=("dataset_context.json",),
+                command_hint=f"taskify(base, task='{candidate.task}', ...)",
+                related_artifacts=("decision_record.json", "dataset_context.json"),
             )
         )
     actions.append(
@@ -646,78 +660,7 @@ def _series_action_plan(
             rationale="Version-to-version drift is a common next move once a first handoff bundle exists.",
             trigger="use when you have v1 and v2 of the same asset",
             command_hint="see examples/compare_two_dataset_versions.py",
-            related_artifacts=("dataset_card.md", "dataset_context.json"),
-        )
-    )
-    return actions
-
-
-def _task_action_plan(context: AgentContextPack, *, include_schemas: bool) -> list[ActionPlanItem]:
-    flags = _task_quality_flags(context)
-    task = flags.get("task", "task")
-    actions: list[ActionPlanItem] = [
-        ActionPlanItem(
-            action_id="done:save_task_card",
-            title="Saved the task card",
-            kind="save",
-            status="already_done",
-            rationale="The task card is already present and should be the human-readable transfer summary.",
-            target="task_card.md",
-            related_artifacts=("task_card.md", "task_card.json"),
-        ),
-        ActionPlanItem(
-            action_id="done:save_task_context",
-            title="Saved the compact task context",
-            kind="save",
-            status="already_done",
-            rationale="The task context is already present and should be the low-token machine interface.",
-            target="task_context.json",
-            related_artifacts=("task_context.json", "task_context.md"),
-        ),
-        ActionPlanItem(
-            action_id="done:save_handoff_index",
-            title="Saved the first-entry handoff index",
-            kind="save",
-            status="already_done",
-            rationale="The minimal index is already present and is the intended first stop for an agent.",
-            target="handoff_index_min.json",
-            related_artifacts=("handoff_index_min.json", "handoff_index_min.md", "handoff_index.json", "handoff_index.md"),
-        ),
-    ]
-    if include_schemas:
-        actions.append(
-            ActionPlanItem(
-                action_id="done:save_schemas",
-                title="Saved artifact schemas",
-                kind="save",
-                status="already_done",
-                rationale="Schema contracts are already bundled for downstream tooling and validation.",
-                target="schemas/",
-                related_artifacts=("schemas/",),
-            )
-        )
-    actions.append(
-        ActionPlanItem(
-            action_id="review:schema",
-            title="Inspect the task schema before modeling",
-            kind="review",
-            status="recommended",
-            rationale=f"`{task}` is already taskified, so the most useful next step is to verify X/y semantics, masks, and aux keys before training.",
-            trigger="always",
-            command_hint="open task_context.json and task_card.md before loading raw arrays",
-            related_artifacts=("task_context.json", "task_card.md"),
-        )
-    )
-    actions.append(
-        ActionPlanItem(
-            action_id="train:baseline",
-            title="Train or evaluate a baseline on the task dataset",
-            kind="run",
-            status="optional",
-            rationale="Once the schema is understood, this task artifact is ready for model code or agent orchestration.",
-            trigger="after schema review",
-            command_hint="see task-specific examples in examples/",
-            related_artifacts=("task_context.json",),
+            related_artifacts=("dataset_card.md", "dataset_context.json", "decision_record.json"),
         )
     )
     return actions
@@ -731,9 +674,7 @@ def _build_index(bundle: DatasetHandoffBundle, *, docs_index: str | None = None)
     else:
         human_open_order, agent_open_order, report_path, card_path, context_path = _series_open_orders(artifact_paths)
         wow_sentence = WOW_SERIES
-    first_non_open = next((item.action_id for item in bundle.action_plan if item.status == "recommended"), None)
     recommended = next((item for item in bundle.action_plan if item.status == "recommended"), None)
-    already_done = [item.action_id for item in bundle.action_plan if item.status == "already_done"]
     return HandoffIndex(
         kind=bundle.kind,
         dataset_id=bundle.dataset_id,
@@ -750,12 +691,23 @@ def _build_index(bundle: DatasetHandoffBundle, *, docs_index: str | None = None)
         card_path=card_path,
         context_path=context_path,
         docs_index=docs_index,
-        first_non_open_action=first_non_open,
+        first_non_open_action=recommended.action_id if recommended is not None else None,
         recommended_next_step=recommended.action_id if recommended is not None else None,
         why_recommended=recommended.rationale if recommended is not None else None,
-        already_done_actions=already_done,
+        decision_path=artifact_paths.get("decision_record.json"),
+        decision_summary=bundle.decision.summary if bundle.decision is not None else None,
+        main_risks=bundle.decision.top_risk_titles() if bundle.decision is not None else [],
+        top_candidate_tasks=bundle.decision.top_candidate_task_names() if bundle.decision is not None else [],
+        decision_confidence=(
+            bundle.decision.recommended_next_step.confidence
+            if bundle.decision is not None and bundle.decision.recommended_next_step is not None
+            else None
+        ),
+        already_done_actions=[item.action_id for item in bundle.action_plan if item.status == "already_done"],
         recommended_prompt=(
-            "Open handoff_index_min.json first. Then follow agent_open_order. Summarize dataset quality, main risks, and the single most useful next step. Open action_plan.json only if you need more detail. Do not open handoff_bundle.json unless a required field is missing."
+            "Open handoff_index_min.json first. Then read decision_record.json before opening larger artifacts. "
+            "Summarize dataset quality, main risks, and the single most useful next step. "
+            "Open action_plan.json only if you need more detail. Do not open handoff_bundle.json unless a required field is missing."
         ),
     )
 
@@ -797,10 +749,11 @@ def build_dataset_handoff_bundle(
     docs_index: str | None = None
 
     if kind == "task_dataset":
-        task = obj  # type: ignore[assignment]
+        task = obj
         assert isinstance(task, TaskDataset)
         context = build_task_context(task, budget="small", goal=goal)
         card = build_task_dataset_card(task, goal=goal)
+        decision = build_task_decision_record(context)
         data_id = f"task:{task.task}"
         summary = _task_handoff_summary(task)
         manifest = {
@@ -812,14 +765,16 @@ def build_dataset_handoff_bundle(
             "goal": goal,
         }
     else:
-        dataset = obj  # type: ignore[assignment]
+        dataset = obj
         assert isinstance(dataset, SeriesDataset)
         context = build_dataset_context(dataset, budget="small", goal=goal, max_series=max_series)
         card = build_series_dataset_card(dataset, goal=goal)
+        decision = build_dataset_decision_record(context)
         data_id = dataset.dataset_id
         summary = (
             f"Time-series dataset report + handoff bundle for `{data_id}`. "
-            f"It packages an EDA-first explanation, compact context, dataset card, a tiny handoff index, and explicit next actions so the asset can move cleanly between people, notebooks, and agents."
+            "It packages an EDA-first explanation, compact context, dataset card, an explicit decision record, "
+            "a tiny handoff index, and clear next actions so the asset can move cleanly between people, notebooks, and agents."
         )
         manifest = {
             "kind": kind,
@@ -832,21 +787,31 @@ def build_dataset_handoff_bundle(
     bundle = DatasetHandoffBundle(
         kind=kind,
         dataset_id=data_id,
-        title=title or (f"TSDataForge Handoff Bundle — {data_id}"),
+        title=title or f"TSDataForge Handoff Bundle - {data_id}",
         summary=summary,
         context=context,
         card=card,
         next_actions=[],
         manifest=manifest,
+        report=report_payload,
+        decision=decision,
         artifacts=artifacts,
         action_plan=[],
     )
 
     if output_dir is None:
-        bundle.action_plan = _task_action_plan(context, include_schemas=include_schemas) if kind == "task_dataset" else _series_action_plan(context, include_report=include_report, include_schemas=include_schemas, include_docs_site=include_docs_site)
-        bundle.next_actions = [item.action_id for item in bundle.action_plan if item.status != "already_done"]
-        bundle.index = _build_index(bundle)
-        bundle.next_actions = _compose_next_actions(bundle.kind, {item.name: item.path for item in bundle.artifacts}, bundle.action_plan)
+        bundle.action_plan = (
+            _task_action_plan_from_decision(context, include_schemas=include_schemas, decision=decision)
+            if kind == "task_dataset"
+            else _series_action_plan_from_decision(
+                context,
+                include_report=include_report,
+                include_schemas=include_schemas,
+                include_docs_site=include_docs_site,
+                decision=decision,
+            )
+        )
+        bundle.next_actions = _compose_next_actions(kind, {}, bundle.action_plan)
         bundle.index = _build_index(bundle)
         return bundle
 
@@ -884,14 +849,53 @@ def build_dataset_handoff_bundle(
     artifacts.append(_artifact(card_json.name, card_json, "card", "Machine-readable dataset or task card."))
     artifacts.append(_artifact(card_md.name, card_md, "card_markdown", "Human-readable dataset or task card."))
 
+    decision_json = out / "decision_record.json"
+    decision_md = out / "decision_record.md"
+    decision_json.write_text(json.dumps(decision.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+    decision_md.write_text(decision.to_markdown(), encoding="utf-8")
+    artifacts.append(
+        _artifact(
+            decision_json.name,
+            decision_json,
+            "decision_record",
+            "Structured routing logic: facts, risks, candidate tasks, blockers, and one recommended next step.",
+        )
+    )
+    artifacts.append(
+        _artifact(
+            decision_md.name,
+            decision_md,
+            "decision_record_markdown",
+            "Human-readable version of the explicit decision record.",
+        )
+    )
+
+    manifest["context"] = context_json.name
+    manifest["card"] = card_json.name
+    manifest["decision_record"] = decision_json.name
+
     if include_schemas:
         schema_dir = out / "schemas"
         schema_catalog = save_artifact_schemas(build_artifact_schemas(version="0.3.7"), schema_dir)
         tool_catalog = save_tool_contracts(build_tool_contracts(version="0.3.7"), schema_dir)
         manifest["schemas"] = [item.schema_id for item in schema_catalog.schemas]
         manifest["tool_contracts"] = [item.tool_id for item in tool_catalog.tools]
-        artifacts.append(_artifact("schemas/", schema_dir, "schema_catalog", "JSON Schema contracts for context, cards, handoff indices, action plans, and handoff bundles."))
-        artifacts.append(_artifact("schemas/tool_contracts.json", schema_dir / "tool_contracts.json", "tool_contracts", "Structured tool-calling contracts for the five public entry points."))
+        artifacts.append(
+            _artifact(
+                "schemas/",
+                schema_dir,
+                "schema_catalog",
+                "JSON Schema contracts for context, cards, decision records, handoff indices, action plans, and handoff bundles.",
+            )
+        )
+        artifacts.append(
+            _artifact(
+                "schemas/tool_contracts.json",
+                schema_dir / "tool_contracts.json",
+                "tool_contracts",
+                "Structured tool-calling contracts for the five public entry points.",
+            )
+        )
 
     if include_docs_site:
         from .site import generate_docs_site
@@ -902,54 +906,80 @@ def build_dataset_handoff_bundle(
         manifest["docs_site"] = site.to_dict()
         artifacts.append(_artifact("docs/", out / "docs", "docs_site", "Offline docs site linked from the report."))
         docs_base_url = "docs/"
-    elif docs_base_url is None:
-        docs_base_url = None
 
     if include_report and kind == "series_dataset":
         from ..report.eda import generate_dataset_eda_report
 
+        assert isinstance(obj, SeriesDataset)
         report = generate_dataset_eda_report(
             obj.values_list(),
             obj.time_list(),
-            title=f"TSDataForge Dataset Report — {data_id}",
+            title=f"TSDataForge Dataset Report - {data_id}",
             output_path=out / "report.html",
             max_series=max_series,
             seed=seed,
             docs_base_url=docs_base_url,
             include_linked_resources=True,
+            decision_record=decision.to_dict(),
         )
         report_payload = report.to_dict()
-        manifest["report"] = str(out / "report.html")
+        manifest["report"] = "report.html"
         artifacts.append(_artifact("report.html", out / "report.html", "eda_report", "Outcome-first dataset EDA report."))
-        hub_json = out / "report_resource_hub.json"
-        hub_md = out / "report_resource_hub.md"
         if report.resource_hub is not None:
+            hub_json = out / "report_resource_hub.json"
+            hub_md = out / "report_resource_hub.md"
             hub_json.write_text(json.dumps(report.resource_hub.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
             from .eda_linking import render_eda_resource_hub_markdown
 
             hub_md.write_text(render_eda_resource_hub_markdown(report.resource_hub), encoding="utf-8")
-            artifacts.append(_artifact(hub_json.name, hub_json, "resource_hub", "Machine-readable routing map from report findings to docs/examples/API/FAQ."))
-            artifacts.append(_artifact(hub_md.name, hub_md, "resource_hub_markdown", "Human-readable routing map from report findings to docs/examples/API/FAQ."))
+            artifacts.append(
+                _artifact(
+                    hub_json.name,
+                    hub_json,
+                    "resource_hub",
+                    "Machine-readable routing map from report findings to docs, examples, API, and FAQ.",
+                )
+            )
+            artifacts.append(
+                _artifact(
+                    hub_md.name,
+                    hub_md,
+                    "resource_hub_markdown",
+                    "Human-readable routing map from report findings to docs, examples, API, and FAQ.",
+                )
+            )
     elif include_report and kind == "task_dataset":
         manifest["report"] = None
         manifest["report_note"] = "TaskDataset bundles skip dataset-level EDA by default; inspect the task card and schema first."
 
     bundle.report = report_payload
     bundle.artifacts = artifacts
-    bundle.action_plan = _task_action_plan(context, include_schemas=include_schemas) if kind == "task_dataset" else _series_action_plan(context, include_report=include_report, include_schemas=include_schemas, include_docs_site=include_docs_site)
-    bundle.next_actions = _compose_next_actions(kind, {item.name: item.path for item in artifacts}, bundle.action_plan)
     bundle.manifest = dict(manifest)
+    bundle.action_plan = (
+        _task_action_plan_from_decision(context, include_schemas=include_schemas, decision=decision)
+        if kind == "task_dataset"
+        else _series_action_plan_from_decision(
+            context,
+            include_report=include_report,
+            include_schemas=include_schemas,
+            include_docs_site=include_docs_site,
+            decision=decision,
+        )
+    )
+    bundle.next_actions = _compose_next_actions(kind, {item.name: item.path for item in artifacts}, bundle.action_plan)
     bundle.index = _build_index(bundle, docs_index=docs_index)
-    bundle.artifacts.extend([
-        _artifact("handoff_index_min.json", out / "handoff_index_min.json", "handoff_index_min", "Smallest agent-first routing contract for the bundle."),
-        _artifact("handoff_index_min.md", out / "handoff_index_min.md", "handoff_index_min_markdown", "Human-readable version of the minimal handoff index."),
-        _artifact("handoff_index.json", out / "handoff_index.json", "handoff_index", "Compact routing map that expands the minimal index for human and agent open order."),
-        _artifact("handoff_index.md", out / "handoff_index.md", "handoff_index_markdown", "Human-readable routing map for the handoff bundle."),
-        _artifact("action_plan.json", out / "action_plan.json", "action_plan", "Detailed already_done / recommended / optional steps for the bundle."),
-        _artifact("action_plan.md", out / "action_plan.md", "action_plan_markdown", "Human-readable action plan for the bundle."),
-        _artifact("handoff_bundle.json", out / "handoff_bundle.json", "handoff_bundle", "Inventory of bundle artifacts and previews of the main handoff surfaces."),
-        _artifact("handoff_bundle.md", out / "handoff_bundle.md", "handoff_bundle_markdown", "Human-readable inventory for the bundle."),
-    ])
+    bundle.artifacts.extend(
+        [
+            _artifact("handoff_index_min.json", out / "handoff_index_min.json", "handoff_index_min", "Smallest agent-first routing contract for the bundle."),
+            _artifact("handoff_index_min.md", out / "handoff_index_min.md", "handoff_index_min_markdown", "Human-readable version of the minimal handoff index."),
+            _artifact("handoff_index.json", out / "handoff_index.json", "handoff_index", "Compact routing map that expands the minimal index for human and agent open order."),
+            _artifact("handoff_index.md", out / "handoff_index.md", "handoff_index_markdown", "Human-readable routing map for the handoff bundle."),
+            _artifact("action_plan.json", out / "action_plan.json", "action_plan", "Detailed already_done / recommended / optional steps for the bundle."),
+            _artifact("action_plan.md", out / "action_plan.md", "action_plan_markdown", "Human-readable action plan for the bundle."),
+            _artifact("handoff_bundle.json", out / "handoff_bundle.json", "handoff_bundle", "Inventory of bundle artifacts and previews of the main handoff surfaces."),
+            _artifact("handoff_bundle.md", out / "handoff_bundle.md", "handoff_bundle_markdown", "Human-readable inventory for the bundle."),
+        ]
+    )
     bundle.save(out)
     return bundle
 
