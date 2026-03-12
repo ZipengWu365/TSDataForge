@@ -74,7 +74,7 @@ def test_readme_mentions_real_world_scenarios_and_open_order():
     assert "## Use your own data" in readme
     assert "channel_names=[\"temperature\", \"pressure\"]" in readme
     assert "agent open order" in handoff_md.lower()
-    assert "Use your own data with `handoff(...)`" in handoff_md
+    assert "Use your own data with `report(...)` and `handoff(...)`" in handoff_md
     assert "30-second path" in quickstart
     assert "## Use your own data" in quickstart
     assert "Shape rules" in quickstart

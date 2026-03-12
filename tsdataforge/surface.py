@@ -89,7 +89,7 @@ def public_surface(version: str = "0.3.7") -> PublicSurface:
                 "demo(output_dir=\"demo_bundle\", scenario=...)",
                 "Generate a built-in demo asset and the full public handoff flow.",
                 "DatasetHandoffBundle",
-                "A credible project needs a copy-paste first success for GitHub, workshops, and agents.",
+                "A credible project needs a copy-paste first success for GitHub, workshops, and teammates.",
             ),
         ),
     )

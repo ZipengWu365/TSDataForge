@@ -8,6 +8,8 @@ dataset -> report -> handoff bundle -> next action
 
 Use this path when you need to understand a raw time-series dataset before modeling or before handing it to another person, script, or agent.
 
+Open `report.html` first. Everything else in the folder exists to explain the dataset or make the next step explicit.
+
 ## What the bundle is for
 
 A handoff bundle turns one time-series dataset into a small, shareable, predictable directory containing:
@@ -21,12 +23,18 @@ A handoff bundle turns one time-series dataset into a small, shareable, predicta
 - `handoff_bundle.json`
 - `schemas/`
 
-## Use your own data with `handoff(...)`
+## Use your own data with `report(...)` and `handoff(...)`
 
 ### One saved file
 
 ```python
-from tsdataforge import handoff
+from tsdataforge import handoff, report
+
+report(
+    "my_dataset.npy",
+    output_path="report.html",
+    dataset_id="factory_sensor_run",
+)
 
 bundle = handoff(
     "my_dataset.npy",
@@ -39,11 +47,19 @@ bundle = handoff(
 
 ```python
 import pandas as pd
-from tsdataforge import handoff
+from tsdataforge import handoff, report
 
 df = pd.read_csv("pump_run.csv")
 values = df[["temperature", "pressure"]].to_numpy()
 time = df["seconds"].to_numpy()
+
+report(
+    values,
+    time=time,
+    output_path="report.html",
+    dataset_id="pump_run",
+    channel_names=["temperature", "pressure"],
+)
 
 bundle = handoff(
     values,
@@ -61,7 +77,7 @@ bundle = handoff(
 - `values.shape == (n_series, length)` means one row per series
 - `values.shape == (length, n_channels)` plus `time.shape == (length,)` means one multichannel series
 
-## Agent open order
+## Automation / agent open order
 
 1. open `handoff_index_min.json`
 2. follow `agent_open_order`
@@ -81,7 +97,7 @@ bundle = handoff(
 - `handoff_index.json` is a slightly richer routing map
 - `action_plan.json` contains the detailed already_done / recommended / optional breakdown
 
-This keeps the first agent read small, while preserving a richer execution plan when needed.
+This keeps the first automation or agent read small, while preserving a richer execution plan when needed.
 
 ## Install note
 

@@ -2,7 +2,7 @@
 
 TSDataForge is a **time-series profiling and handoff layer**.
 
-Start here if you want the fastest path from a raw dataset to a profiling report, a dataset card, a compact context, and a next-action plan.
+Start here if you want the fastest path from a raw dataset to a profiling report first, then a shareable handoff folder only when you need it.
 
 ## Install
 
@@ -22,11 +22,11 @@ PyPI publishing is not live yet, so `pip install tsdataforge` will not work unti
 
 ## 30-second path
 
-```bash
-git clone https://github.com/ZipengWu365/TSDataForge.git
-cd TSDataForge
-pip install ".[viz]"
-python -m tsdataforge demo --output demo_bundle
+```python
+from tsdataforge import demo
+
+bundle = demo(output_dir="demo_bundle", scenario="ecg_public")
+print(bundle.output_dir)
 ```
 
 Default demo in `0.3.7` is a **real public ECG** showcase.
@@ -63,14 +63,16 @@ Then open `http://127.0.0.1:8765/`, drag in a raw file, and inspect the generate
 If you already have a saved dataset file, start here:
 
 ```python
-from tsdataforge import handoff
+from tsdataforge import report
 
-bundle = handoff(
+report(
     "my_dataset.npy",
-    output_dir="my_bundle",
+    output_path="report.html",
     dataset_id="lab_measurements",
 )
 ```
+
+Open `report.html` first. If you need the shareable folder afterwards, call `handoff(...)` on the same file.
 
 Supported direct inputs:
 
@@ -86,11 +88,19 @@ If your CSV has headers, timestamps, or explicit channel names, convert it to ar
 
 ```python
 import pandas as pd
-from tsdataforge import handoff
+from tsdataforge import handoff, report
 
 df = pd.read_csv("pump_run.csv")
 values = df[["temperature", "pressure"]].to_numpy()
 time = df["seconds"].to_numpy()
+
+report(
+    values,
+    time=time,
+    output_path="report.html",
+    dataset_id="pump_run",
+    channel_names=["temperature", "pressure"],
+)
 
 bundle = handoff(
     values,
@@ -116,8 +126,11 @@ bundle = handoff(
 
 ## 5-minute path
 
-```bash
-python -m tsdataforge demo --scenario macro_public --output macro_bundle
+```python
+from tsdataforge import demo
+
+bundle = demo(output_dir="macro_bundle", scenario="macro_public")
+print(bundle.output_dir)
 ```
 
 Read the report first. Then inspect the card and the minimal handoff index.
@@ -125,11 +138,10 @@ Read the report first. Then inspect the card and the minimal handoff index.
 ## 20-minute path
 
 ```python
-from tsdataforge import load_asset, handoff, taskify
+from tsdataforge import handoff, taskify
 
-base = load_asset("my_dataset.npy")
-bundle = handoff(base, output_dir="my_bundle")
-forecast = taskify(base, task="forecasting", horizon=24)
+bundle = handoff("my_dataset.npy", output_dir="my_bundle")
+forecast = taskify("my_dataset.npy", task="forecasting", horizon=24)
 ```
 
 Only call `taskify(...)` **after** the report makes sense.

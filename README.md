@@ -73,11 +73,11 @@ In those workflows, TSDataForge usually comes **before** or **around** the model
 
 These are the flagship demos for a new GitHub visitor. They start from **real public data**, not only reality-shaped synthetic samples.
 
-| Demo | Why it matters | One command |
+| Demo | Why it matters | Python call |
 |---|---|---|
-| **Public ECG arrhythmia handoff** | real biomedical signal windows; good for event/anomaly routing | `python -m tsdataforge demo --scenario ecg_public --output ecg_bundle` |
-| **Public US macro handoff** | real inflation / unemployment / T-bill windows; good for regime-aware routing | `python -m tsdataforge demo --scenario macro_public --output macro_bundle` |
-| **Public climate CO2 handoff** | real weekly atmospheric CO2 with trend, seasonality, and missingness | `python -m tsdataforge demo --scenario climate_public --output climate_bundle` |
+| **Public ECG arrhythmia handoff** | real biomedical signal windows; good for event/anomaly routing | `demo(output_dir="ecg_bundle", scenario="ecg_public")` |
+| **Public US macro handoff** | real inflation / unemployment / T-bill windows; good for regime-aware routing | `demo(output_dir="macro_bundle", scenario="macro_public")` |
+| **Public climate CO2 handoff** | real weekly atmospheric CO2 with trend, seasonality, and missingness | `demo(output_dir="climate_bundle", scenario="climate_public")` |
 
 Source notes and provenance:
 [docs/public_data_provenance.md](docs/public_data_provenance.md)
@@ -143,12 +143,14 @@ PyPI publishing is not live yet, so `pip install tsdataforge` will not work unti
 
 ### 60-second path
 
-```bash
-git clone https://github.com/ZipengWu365/TSDataForge.git
-cd TSDataForge
-pip install ".[viz]"
-python -m tsdataforge demo --scenario ecg_public --output demo_bundle
+```python
+from tsdataforge import demo
+
+bundle = demo(output_dir="demo_bundle", scenario="ecg_public")
+print(bundle.output_dir)
 ```
+
+Open `demo_bundle/report.html` first.
 
 Docs and showcase pages:
 [zipengwu365.github.io/TSDataForge](https://zipengwu365.github.io/TSDataForge/)
@@ -164,16 +166,16 @@ TSDataForge accepts:
 ### Fastest path: one saved file
 
 ```python
-from tsdataforge import handoff
+from tsdataforge import report
 
-bundle = handoff(
+report(
     "my_sensor_windows.npy",
-    output_dir="sensor_bundle",
+    output_path="report.html",
     dataset_id="pump_lab_run",
 )
-print(bundle.output_dir)
-print(bundle.index.recommended_next_step)
 ```
+
+Open `report.html` first. If you later want a shareable folder with card/context/index sidecars, call `handoff(...)` on the same file.
 
 ### If your data starts in pandas
 
@@ -181,11 +183,19 @@ Use this path when your CSV has headers, timestamps, or explicit channel names:
 
 ```python
 import pandas as pd
-from tsdataforge import handoff
+from tsdataforge import handoff, report
 
 df = pd.read_csv("pump_run.csv")
 values = df[["temperature", "pressure"]].to_numpy()
 time = df["seconds"].to_numpy()
+
+report(
+    values,
+    time=time,
+    output_path="report.html",
+    dataset_id="pump_run",
+    channel_names=["temperature", "pressure"],
+)
 
 bundle = handoff(
     values,

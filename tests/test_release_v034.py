@@ -38,7 +38,8 @@ def test_source_docs_and_readme_are_aligned():
     quickstart = Path("docs/quickstart.md").read_text(encoding="utf-8")
     handoff = Path("docs/handoff.md").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
-    assert "python -m tsdataforge demo --output demo_bundle" in quickstart
+    assert "from tsdataforge import demo" in quickstart
+    assert "report.html" in quickstart
     assert "handoff_index_min.json" in handoff
     assert "showcase/assets/raw-vs-bundle.svg" in readme
     assert "Public ECG arrhythmia handoff" in readme
