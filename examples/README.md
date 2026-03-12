@@ -14,6 +14,11 @@ These examples are intentionally short and scenario-first.
 - `agent_only_open_order.py`
 - `compare_two_dataset_versions.py`
 
+## Bring-your-own-data note
+
+- `real_csv_to_report_30s.py` shows the direct numeric-CSV path
+- if your source file has headers or timestamps, load it yourself and pass arrays into `load_asset(...)`, `report(...)`, or `handoff(...)`
+
 ## Why these examples exist
 
 They are designed to answer three practical questions quickly:

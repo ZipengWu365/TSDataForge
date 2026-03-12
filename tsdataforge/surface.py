@@ -58,7 +58,7 @@ def public_surface(version: str = "0.3.7") -> PublicSurface:
         entrypoints=(
             PublicEntrypoint(
                 "load_asset",
-                "load_asset(source, time=None, dataset_id=None)",
+                "load_asset(source, time=None, dataset_id=None, channel_names=None)",
                 "Turn a path or raw arrays into a reusable TSDataForge asset.",
                 "SeriesDataset | TaskDataset",
                 "New users should not have to guess how to load `.npy`, `.npz`, `.csv`, or raw arrays before profiling them.",
@@ -72,14 +72,14 @@ def public_surface(version: str = "0.3.7") -> PublicSurface:
             ),
             PublicEntrypoint(
                 "handoff",
-                'handoff(source, output_dir="handoff_bundle")',
+                'handoff(source, time=None, output_dir="handoff_bundle", dataset_id=None, channel_names=None)',
                 "Package the report, context, card, decision record, and next actions into one predictable bundle.",
                 "DatasetHandoffBundle",
                 "This is the shortest happy path from a raw dataset to reusable, shareable output.",
             ),
             PublicEntrypoint(
                 "taskify",
-                "taskify(source, task=..., ...)",
+                "taskify(source, task=..., time=None, channel_names=None, ...)",
                 "Derive a task-specific dataset only after the asset and report are clear.",
                 "TaskDataset",
                 "Taskification should come after understanding, not before it.",
@@ -116,6 +116,19 @@ def load_asset(
     dataset_id: str | None = None,
     channel_names: list[str] | None = None,
 ) -> SeriesDataset | TaskDataset:
+    """Load user data from a path or raw arrays into a TSDataForge asset.
+
+    Supported sources include `.npy`, `.npz`, `.csv`, `.txt`, `.json`, and
+    in-memory arrays.
+
+    Shape conventions for raw arrays:
+    - `values.shape == (length,)`: one univariate series
+    - `values.shape == (n_series, length)`: one row per series
+    - `values.shape == (length, n_channels)` with `time.shape == (length,)`:
+      one multichannel series over time
+    - `values.shape == (n_series, length, n_channels)`: many multichannel series
+    """
+
     return coerce_asset(source, time, dataset_id=dataset_id, channel_names=channel_names)
 
 
@@ -129,6 +142,8 @@ def report(
     dataset_id: str | None = None,
     channel_names: list[str] | None = None,
 ) -> EDAReport:
+    """Generate the first human-readable HTML report for a user dataset."""
+
     asset = (
         source
         if isinstance(source, (SeriesDataset, TaskDataset, GeneratedSeries))
@@ -167,8 +182,19 @@ def handoff(
     include_source_asset: bool = True,
     include_schemas: bool = True,
     dataset_id: str | None = None,
+    channel_names: list[str] | None = None,
 ) -> DatasetHandoffBundle:
-    asset = source if isinstance(source, (SeriesDataset, TaskDataset)) else coerce_asset(source, time, dataset_id=dataset_id)
+    """Package a raw file or array into a report-first handoff bundle.
+
+    Pass `channel_names=` when your input is a multichannel array and you want
+    the bundle artifacts to preserve channel labels.
+    """
+
+    asset = (
+        source
+        if isinstance(source, (SeriesDataset, TaskDataset))
+        else coerce_asset(source, time, dataset_id=dataset_id, channel_names=channel_names)
+    )
     return build_dataset_handoff_bundle(
         asset,
         output_dir=output_dir,
@@ -186,9 +212,16 @@ def taskify(
     time: Any | None = None,
     *,
     dataset_id: str | None = None,
+    channel_names: list[str] | None = None,
     **kwargs: Any,
 ) -> TaskDataset:
-    asset = source if isinstance(source, SeriesDataset) else coerce_asset(source, time, dataset_id=dataset_id)
+    """Convert a base dataset into a task view after the asset is understood."""
+
+    asset = (
+        source
+        if isinstance(source, SeriesDataset)
+        else coerce_asset(source, time, dataset_id=dataset_id, channel_names=channel_names)
+    )
     if not isinstance(asset, SeriesDataset):
         raise TypeError("`taskify()` expects a base SeriesDataset or raw arrays/path that can be loaded into one.")
     return taskify_dataset(asset, task=task, **kwargs)
@@ -204,6 +237,8 @@ def demo(
     include_schemas: bool = True,
     scenario: str = "ecg_public",
 ) -> DatasetHandoffBundle:
+    """Build a public demo bundle for onboarding, docs, and smoke tests."""
+
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     from .demo_assets import build_demo_dataset

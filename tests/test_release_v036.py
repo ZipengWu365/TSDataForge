@@ -71,8 +71,13 @@ def test_readme_mentions_real_world_scenarios_and_open_order():
     assert "license-MIT" in readme
     assert "pip install \"git+https://github.com/ZipengWu365/TSDataForge.git\"" in readme
     assert "Open these files in this order" in readme
+    assert "## Use your own data" in readme
+    assert "channel_names=[\"temperature\", \"pressure\"]" in readme
     assert "agent open order" in handoff_md.lower()
+    assert "Use your own data with `handoff(...)`" in handoff_md
     assert "30-second path" in quickstart
+    assert "## Use your own data" in quickstart
+    assert "Shape rules" in quickstart
 
 
 def test_demo_scenario_catalog_contains_flagship_cases():

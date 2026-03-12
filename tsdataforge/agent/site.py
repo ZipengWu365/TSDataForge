@@ -545,6 +545,91 @@ def _toc(items: list[tuple[str, str]]) -> str:
 
 
 
+def _bring_your_own_data_section(lang: str, *, section_id: str = "your-data") -> str:
+    saved_file_code = """from tsdataforge import handoff
+
+bundle = handoff(
+    'my_sensor_windows.npy',
+    output_dir='sensor_bundle',
+    dataset_id='pump_lab_run',
+)
+print(bundle.output_dir)"""
+    dataframe_code = """import pandas as pd
+from tsdataforge import handoff
+
+df = pd.read_csv('pump_run.csv')
+values = df[['temperature', 'pressure']].to_numpy()
+time = df['seconds'].to_numpy()
+
+bundle = handoff(
+    values,
+    time=time,
+    output_dir='pump_bundle',
+    dataset_id='pump_run',
+    channel_names=['temperature', 'pressure'],
+)"""
+    rows = [
+        [
+            "<code>(length,)</code>",
+            escape(_tr(lang, "one univariate series", "一条单变量序列")),
+        ],
+        [
+            "<code>(n_series, length)</code>",
+            escape(_tr(lang, "one row per series", "每一行代表一条序列")),
+        ],
+        [
+            "<code>(length, n_channels)</code> + <code>time.shape == (length,)</code>",
+            escape(_tr(lang, "one multichannel series over time", "一条带多个通道的时间序列")),
+        ],
+        [
+            "<code>(n_series, length, n_channels)</code>",
+            escape(_tr(lang, "many multichannel series", "多条多通道序列")),
+        ],
+    ]
+    body = f"<div class='section' id='{escape(section_id)}'><div class='kicker'>{escape(_tr(lang, 'Bring your own data', '接入你自己的数据'))}</div>"
+    body += f"<h2>{escape(_tr(lang, 'Use your own files or arrays without guessing the input rules', '直接用你自己的文件或数组，不用猜输入规则'))}</h2>"
+    body += (
+        "<div class='notice'><strong>"
+        + escape(_tr(lang, 'Important', '重要'))
+        + ":</strong> "
+        + escape(_tr(lang, 'Direct CSV/TXT loading expects numeric files. If your file has headers or date strings, read it yourself first and pass `values` plus `time=`.', '直接读取 CSV/TXT 时要求文件是纯数值。如果文件里有表头或日期字符串，请先自己读入，再传 `values` 和 `time=`。'))
+        + "</div>"
+    )
+    body += "<div class='grid'>"
+    body += _card(
+        _tr(lang, '1) Start from one saved file', '1）从一个已保存文件开始'),
+        "<pre><code>"
+        + escape(saved_file_code)
+        + "</code></pre><p class='small'>"
+        + escape(_tr(lang, 'Direct paths support `.npy`, `.npz`, `.csv`, `.txt`, and `.json`.', '直接路径支持 `.npy`、`.npz`、`.csv`、`.txt` 和 `.json`。'))
+        + "</p>",
+    )
+    body += _card(
+        _tr(lang, '2) Start from pandas or arrays', '2）从 pandas 或数组开始'),
+        "<pre><code>"
+        + escape(dataframe_code)
+        + "</code></pre><p class='small'>"
+        + escape(_tr(lang, 'Use this path when you need explicit time values or channel names.', '当你需要显式指定时间列或通道名时，走这条路径。'))
+        + "</p>",
+    )
+    body += _card(
+        _tr(lang, '3) CSV / TXT rule', '3）CSV / TXT 规则'),
+        _bullets([
+            _tr(lang, 'The file should be numeric.', '文件内容应当是纯数值。'),
+            _tr(lang, 'If the first column is monotonic increasing, it is treated as time.', '如果第一列单调递增，它会被当作时间轴。'),
+            _tr(lang, 'Otherwise the loaded matrix follows the normal shape rules below.', '否则加载出来的矩阵会按下面的 shape 规则解释。'),
+        ]),
+    )
+    body += "</div>"
+    body += f"<div class='section'><h3>{escape(_tr(lang, 'Shape rules that decide what TSDataForge sees', '决定 TSDataForge 如何理解数据的 shape 规则'))}</h3>"
+    body += _table(
+        [_tr(lang, 'Input shape', '输入 shape'), _tr(lang, 'Interpretation', '解释方式')],
+        rows,
+    )
+    body += "</div></div>"
+    return body
+
+
 def _route_title(route_id: str, title: str, summary: str, lang: str) -> tuple[str, str]:
     if lang.startswith("zh") and route_id in ROUTE_ZH:
         return ROUTE_ZH[route_id]
@@ -1661,6 +1746,7 @@ def _landing_page_refined(lang: str, catalog: list[ExampleRecipe], tutorials: li
         ('what', _tr(lang, 'What the package is', '这个包是做什么的')),
         ('why', _tr(lang, 'Why it exists', '为什么会有这个包')),
         ('handoff', _tr(lang, 'The shortest happy path', '最短 happy path')),
+        ('your-data', _tr(lang, 'Use your own data', 'Use your own data')),
         ('flagship', _tr(lang, 'Three real public demos', '三个真实公开数据案例')),
         ('surface', _tr(lang, 'The five APIs to remember', '最该记住的五个 API')),
         ('positioning', _tr(lang, 'How it differs from other libraries', '它与其他库的差异')),
@@ -1702,7 +1788,7 @@ def _landing_page_refined(lang: str, catalog: list[ExampleRecipe], tutorials: li
     ]))
     body += '</div></div>'
     body += f"<div class='section' id='handoff'><div class='kicker'>Happy path</div><h2>{escape(_tr(lang, 'Start with one handoff bundle, not a long module tour', '先生成一个 handoff bundle，而不是先看很长的模块列表'))}</h2><div class='two-col'>"
-    body += _card(_tr(lang, 'Recommended first call', '推荐第一条调用'), "<pre><code>from tsdataforge import handoff\n\nbundle = handoff(\n    dataset,\n    output_dir='dataset_handoff_bundle',\n    include_schemas=True,\n)\nprint(bundle.output_dir)</code></pre><p class='small'>" + escape(_tr(lang, 'This creates report + context + card + handoff index + manifest + schemas in one predictable directory.', '这会把 report、context、card、handoff index、manifest 和 schemas 放进一个可预测目录。')) + "</p>")
+    body += _card(_tr(lang, 'Recommended first call', '推荐第一条调用'), "<pre><code>from tsdataforge import handoff\n\nbundle = handoff(\n    'my_dataset.npy',\n    output_dir='dataset_handoff_bundle',\n    dataset_id='lab_values',\n    include_schemas=True,\n)\nprint(bundle.output_dir)</code></pre><p class='small'>" + escape(_tr(lang, 'This creates report + context + card + handoff index + manifest + schemas in one predictable directory.', '这会把 report、context、card、handoff index、manifest 和 schemas 放进一个可预测目录。')) + "</p>")
     body += _card(_tr(lang, 'Open in this order', '推荐打开顺序'), _bullets([
         _tr(lang, '1. report.html', '1. report.html'),
         _tr(lang, '2. dataset_card.md', '2. dataset_card.md'),
@@ -1711,6 +1797,7 @@ def _landing_page_refined(lang: str, catalog: list[ExampleRecipe], tutorials: li
         _tr(lang, '5. choose one next action from the bundle', '5. 从 bundle 里挑一个 next action'),
     ]))
     body += "</div></div>"
+    body += _bring_your_own_data_section(lang, section_id='your-data')
     body += f"<div class='section' id='surface'><div class='kicker'>Public surface</div><h2>{escape(_tr(lang, 'The five APIs to remember first', '最先记住的五个 API'))}</h2><p class='muted'>{escape(_tr(lang, 'Everything else in TSDataForge can stay advanced for a while. These five entry points are the public product surface the README, docs, and agents should agree on.', 'TSDataForge 里的其他东西暂时都可以留在 advanced 区。这五个入口就是 README、docs 和 agents 应该共同遵守的公共产品表层。'))}</p>{_public_surface_table(lang)}</div>"
     top_companions = [item for item in matrix.profiles if item.kind != 'self'][:4]
     comp_rows = []
@@ -1747,6 +1834,7 @@ def _getting_started_page_refined(lang: str) -> str:
     body += _toc([
         ('what', _tr(lang, 'What this package is for', '这个包是干什么的')),
         ('surface', _tr(lang, 'The five APIs to learn first', '先学会的五个 API')),
+        ('your-data', _tr(lang, 'Use your own data', 'Use your own data')),
         ('ladder', _tr(lang, '30-second / 5-minute / 20-minute ladder', '30 秒 / 5 分钟 / 20 分钟路径')),
         ('five', _tr(lang, 'The first four code blocks', '前四段代码')),
         ('envs', _tr(lang, 'Good starting environments', '最合适的起步环境')),
@@ -1758,6 +1846,7 @@ def _getting_started_page_refined(lang: str) -> str:
     body += _card(_tr(lang, 'If you want a benchmark', '如果你想做 benchmark'), '<p>' + escape(_tr(lang, 'Do not start from `generate_dataset` unless the task is fixed. Start from a reusable base dataset whenever you can.', '除非任务已经固定，否则不要一上来就用 `generate_dataset`。能从可复用基础数据集开始就尽量从那里开始。')) + '</p>')
     body += '</div></div>'
     body += f"<div class='section' id='surface'><h2>{escape(_tr(lang, 'The five APIs to learn first', '最先要学会的五个 API'))}</h2>{_public_surface_cards(lang)}</div>"
+    body += _bring_your_own_data_section(lang, section_id='your-data')
     body += f"<div class='section' id='ladder'><div class='tip'><strong>{escape(_tr(lang, '60-second demo', '60 秒演示'))}:</strong><pre><code>git clone https://github.com/ZipengWu365/TSDataForge.git\ncd TSDataForge\npip install &quot;.[viz]&quot;\npython -m tsdataforge demo --output demo_bundle</code></pre><p>{escape(_tr(lang, 'Open `demo_bundle/report.html` first.', '先打开 `demo_bundle/report.html`。'))}</p></div></div>"
     blocks = [
         (
@@ -1814,6 +1903,7 @@ def _handoff_page_refined(lang: str) -> str:
     )
     body += _toc([
         ('why', _tr(lang, 'Why start here', '为什么应该从这里开始')),
+        ('your-data', _tr(lang, 'Use your own data', 'Use your own data')),
         ('python', _tr(lang, 'One Python call', '一个 Python 调用')),
         ('open-order', _tr(lang, 'Human and agent open order', '人类和 agent 的打开顺序')),
         ('actions', _tr(lang, 'Why the next-action plan is believable', '为什么 next-action plan 是可信的')),
@@ -1826,6 +1916,7 @@ def _handoff_page_refined(lang: str) -> str:
     body += _card(_tr(lang, 'What makes it different', '它和单独的 report / card 有什么不同'), '<p>' + escape(_tr(lang, 'The handoff bundle is not one more artifact. It deliberately packages report + context + card + manifest + next actions into one predictable directory.', 'handoff bundle 不是再多一个 artifact，而是把 report、context、card、manifest 和 next actions 有意识地打包成一个可预测目录。')) + '</p>')
     body += _card(_tr(lang, 'What to avoid', '要避免什么'), '<p>' + escape(_tr(lang, 'Avoid starting by pasting raw arrays into prompts or sending only a long README. Start with the bundle, then open the raw asset only if needed.', '避免一开始就把原始数组塞进 prompt，或者只给一份很长的 README。应该先从 bundle 开始，只有在必要时再打开原始资产。')) + '</p>')
     body += '</div></div>'
+    body += _bring_your_own_data_section(lang, section_id='your-data')
     body += f"<div class='section' id='open-order'><h2>{escape(_tr(lang, 'Human and agent open order', '人类和 agent 的打开顺序'))}</h2><div class='grid'>"
     body += _card(_tr(lang, 'Human open order', '人类打开顺序'), "<ol><li><code>report.html</code></li><li><code>dataset_card.md</code></li><li><code>dataset_context.json</code></li><li><code>handoff_index_min.json</code></li><li><code>action_plan.json</code></li></ol>")
     body += _card(_tr(lang, 'Agent open order', 'agent 打开顺序'), "<ol><li><code>handoff_index_min.json</code></li><li><code>dataset_context.json</code></li><li><code>dataset_card.md</code></li><li><code>action_plan.json</code></li><li><code>recommended_next_step</code></li></ol><p class='small'>" + escape(_tr(lang, 'Do not open `handoff_bundle.json` unless a required field is missing.', '除非缺少必要字段，否则不要先打开 `handoff_bundle.json`。')) + "</p>")

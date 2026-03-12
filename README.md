@@ -111,10 +111,10 @@ There is also a public physical-science demo that is not yet promoted on the fir
 
 | API | What it does | Returns | Why it exists |
 |---|---|---|---|
-| `load_asset(source, time=None, dataset_id=None)` | load files or arrays into a TSDataForge asset | `SeriesDataset` or `TaskDataset` | one obvious loader for `.npy`, `.npz`, `.csv`, `.txt`, `.json`, or raw arrays |
+| `load_asset(source, time=None, dataset_id=None, channel_names=None)` | load files or arrays into a TSDataForge asset | `SeriesDataset` or `TaskDataset` | one obvious loader for `.npy`, `.npz`, `.csv`, `.txt`, `.json`, or raw arrays |
 | `report(source, output_path="report.html")` | generate the first human-readable profiling artifact | `EDAReport` | the package should feel like a time-series profiling layer before it feels like a toolkit |
-| `handoff(source, output_dir="handoff_bundle")` | package report, card, context, decision logic, schemas, and next actions | `DatasetHandoffBundle` | shortest path from raw asset to reusable output |
-| `taskify(source, task=..., ...)` | derive a task-specific dataset after the asset is understood | `TaskDataset` | taskification should come **after** understanding |
+| `handoff(source, time=None, output_dir="handoff_bundle", dataset_id=None, channel_names=None)` | package report, card, context, decision logic, schemas, and next actions | `DatasetHandoffBundle` | shortest path from raw asset to reusable output |
+| `taskify(source, task=..., time=None, channel_names=None, ...)` | derive a task-specific dataset after the asset is understood | `TaskDataset` | taskification should come **after** understanding |
 | `demo(output_dir="demo_bundle", scenario=...)` | generate a built-in demo bundle | `DatasetHandoffBundle` | every public repo needs a credible copy-paste first success |
 
 ---
@@ -152,6 +152,65 @@ python -m tsdataforge demo --scenario ecg_public --output demo_bundle
 
 Docs and showcase pages:
 [zipengwu365.github.io/TSDataForge](https://zipengwu365.github.io/TSDataForge/)
+
+## Use your own data
+
+TSDataForge accepts:
+
+- saved `.npy`, `.npz`, `.csv`, `.txt`, or `.json` files
+- raw NumPy arrays
+- arrays you extracted from a pandas DataFrame
+
+### Fastest path: one saved file
+
+```python
+from tsdataforge import handoff
+
+bundle = handoff(
+    "my_sensor_windows.npy",
+    output_dir="sensor_bundle",
+    dataset_id="pump_lab_run",
+)
+print(bundle.output_dir)
+print(bundle.index.recommended_next_step)
+```
+
+### If your data starts in pandas
+
+Use this path when your CSV has headers, timestamps, or explicit channel names:
+
+```python
+import pandas as pd
+from tsdataforge import handoff
+
+df = pd.read_csv("pump_run.csv")
+values = df[["temperature", "pressure"]].to_numpy()
+time = df["seconds"].to_numpy()
+
+bundle = handoff(
+    values,
+    time=time,
+    output_dir="pump_bundle",
+    dataset_id="pump_run",
+    channel_names=["temperature", "pressure"],
+)
+```
+
+### Shape rules that matter
+
+- `values.shape == (length,)` means one univariate series
+- `values.shape == (n_series, length)` means one row per series
+- `values.shape == (length, n_channels)` with `time.shape == (length,)` means one multichannel series over time
+- `values.shape == (n_series, length, n_channels)` means many multichannel series
+
+### CSV rule
+
+- Direct `.csv` / `.txt` loading expects **numeric** files
+- if the first column is monotonic increasing, TSDataForge treats it as `time`
+- otherwise the loaded matrix follows the normal shape rules above
+- if your CSV has headers or date strings, read it yourself and pass `values` plus `time=`
+
+There is also a minimal example at [examples/real_csv_to_report_30s.py](examples/real_csv_to_report_30s.py).
 
 ### Local GUI
 

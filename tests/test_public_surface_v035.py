@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -33,6 +34,22 @@ def test_load_report_handoff_and_taskify_with_arrays(tmp_path: Path):
     forecast = taskify(asset, task="forecasting", horizon=12)
     assert forecast.task == "forecasting"
     assert len(forecast.X) == 8
+
+
+def test_handoff_accepts_channel_names_for_raw_arrays(tmp_path: Path):
+    pytest.importorskip("matplotlib")
+    values = np.random.default_rng(0).normal(size=(64, 2))
+    time = np.arange(64, dtype=float)
+    bundle = handoff(
+        values,
+        time=time,
+        output_dir=tmp_path / "handoff_bundle",
+        dataset_id="pump_run",
+        channel_names=["temperature", "pressure"],
+    )
+    payload = json.loads((tmp_path / "handoff_bundle" / "handoff_bundle.json").read_text(encoding="utf-8"))
+    assert bundle.manifest["channel_names"] == ["temperature", "pressure"]
+    assert payload["manifest"]["channel_names"] == ["temperature", "pressure"]
 
 
 def test_demo_and_public_vs_full_api_reference(tmp_path: Path):

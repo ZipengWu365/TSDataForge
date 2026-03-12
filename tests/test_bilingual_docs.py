@@ -21,10 +21,15 @@ def test_examples_and_tutorials_are_localizable():
 def test_docs_site_has_english_root_and_chinese_mirror(tmp_path: Path):
     site = generate_docs_site(tmp_path / "site")
     index = (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
+    quickstart = (tmp_path / "site" / "getting-started.html").read_text(encoding="utf-8")
+    handoff = (tmp_path / "site" / "handoff.html").read_text(encoding="utf-8")
     zh_index = (tmp_path / "site" / "zh" / "index.html").read_text(encoding="utf-8")
     assert "Quickstart" in index
+    assert "Bring your own data" in index
+    assert "Use your own files or arrays without guessing the input rules" in quickstart
+    assert "channel_names" in handoff
     assert "zxw365@student.bham.ac.uk" in index
-    assert "中文" in index
+    assert "href='zh/index.html'" in index
     assert "English" in zh_index
     assert "href='../index.html'" in zh_index
     assert (tmp_path / "site" / "tutorials.html").exists()
