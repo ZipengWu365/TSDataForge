@@ -11,11 +11,13 @@ These examples are intentionally short and scenario-first.
 ## Common handoff patterns
 
 - `real_csv_to_report_30s.py`
+- `profile_your_own_csv.py`
 - `agent_only_open_order.py`
 - `compare_two_dataset_versions.py`
 
 ## Bring-your-own-data note
 
+- `profile_your_own_csv.py` is the human-first example: read your table, pick columns, call `report(...)`, then optionally `handoff(...)`
 - `real_csv_to_report_30s.py` shows the direct numeric-CSV path
 - if your source file has headers or timestamps, load it yourself and pass arrays into `load_asset(...)`, `report(...)`, or `handoff(...)`
 

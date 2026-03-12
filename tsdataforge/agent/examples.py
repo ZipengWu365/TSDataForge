@@ -1349,60 +1349,77 @@ _EXAMPLE_EN.update({
 _CATALOG = _CATALOG + (
     ExampleRecipe(
         example_id="csv_to_report",
-        title="CSV to report: the shortest path from a plain file to a report-first asset",
-        summary="Load a simple CSV file, wrap it as a SeriesDataset, and generate a handoff bundle in one script.",
-        goal="Help new users succeed with their own file before they learn the larger synthetic/taskification surface.",
+        title="Use your own CSV or DataFrame and get a report first",
+        summary="Read your own table with pandas, call `report(...)`, and save a handoff bundle only if you want to share the result.",
+        goal="Show a human-first path: read data, run one function, then open the saved report before thinking about tasks or internals.",
         keywords=("csv", "report", "handoff", "real data", "first success"),
         audience=("new_user", "researcher", "agent"),
-        filename="csv_to_report.py",
+        filename="profile_your_own_csv.py",
         category="quickstart",
         difficulty="intro",
-        outputs=("report.html", "dataset card", "compact context"),
-        related_api=("SeriesDataset", "build_dataset_handoff_bundle", "generate_dataset_eda_report"),
+        outputs=("report.html", "my_series_handoff/"),
+        related_api=("report", "handoff", "load_asset"),
         code=dedent(
             '''
-            import numpy as np
-            from tsdataforge.datasets import SeriesDataset
-            from tsdataforge import build_dataset_handoff_bundle
+            import pandas as pd
+            from tsdataforge import report, handoff
 
-            arr = np.genfromtxt("my_series.csv", delimiter=",")
-            time = arr[:, 0]
-            values = arr[:, 1:]
-            ds = SeriesDataset.from_arrays(values, time=time, dataset_id="my_series")
-            build_dataset_handoff_bundle(ds, output_dir="csv_bundle", include_report=True)
+            df = pd.read_csv("my_series.csv")
+            values = df[["sensor_a", "sensor_b"]].to_numpy()
+            time = df["timestamp"].to_numpy()
+
+            report(
+                values,
+                time=time,
+                output_path="report.html",
+                dataset_id="my_series",
+                channel_names=["sensor_a", "sensor_b"],
+            )
+
+            bundle = handoff(
+                values,
+                time=time,
+                output_dir="my_series_handoff",
+                dataset_id="my_series",
+                channel_names=["sensor_a", "sensor_b"],
+            )
+            print(bundle.output_dir)
             '''
         ).strip(),
         learnings=(
-            "The product entrypoint should work with an ordinary file, not only with synthetic generators.",
-            "The report-first workflow is easier to explain than jumping straight into modeling.",
+            "A public example should look like ordinary Python: read a table, call a function, inspect the saved result.",
+            "For real data, `report(...)` is the first thing to explain, while `handoff(...)` is the follow-up for sharing and automation.",
         ),
     ),
     ExampleRecipe(
         example_id="npy_to_handoff_bundle",
-        title="NumPy file to handoff bundle",
-        summary="Load a `.npy` file and generate the shortest report + card + context + next-action path.",
-        goal="Give GitHub visitors and new users a minimal script that mirrors the CLI story in Python.",
+        title="Use your own NumPy file and get a handoff bundle",
+        summary="Point the public `report(...)` and `handoff(...)` entry points at a saved `.npy` file.",
+        goal="Give new users a minimal script for real arrays without exposing the lower-level container APIs first.",
         keywords=("npy", "handoff", "bundle", "quickstart", "python"),
         audience=("new_user", "maintainer", "agent"),
         filename="npy_to_handoff_bundle.py",
         category="quickstart",
         difficulty="intro",
-        outputs=("handoff bundle", "report.html"),
-        related_api=("SeriesDataset", "build_dataset_handoff_bundle"),
+        outputs=("my_dataset_handoff/", "report.html"),
+        related_api=("report", "handoff"),
         code=dedent(
             '''
-            import numpy as np
-            from tsdataforge import SeriesDataset, build_dataset_handoff_bundle
+            from tsdataforge import report, handoff
 
-            values = np.load("my_dataset.npy", allow_pickle=True)
-            ds = SeriesDataset.from_arrays(values, dataset_id="my_dataset")
-            bundle = build_dataset_handoff_bundle(ds, output_dir="npy_bundle", include_report=True)
-            print(bundle.index.primary_open_order)
+            report("my_dataset.npy", output_path="report.html")
+
+            bundle = handoff(
+                "my_dataset.npy",
+                output_dir="my_dataset_handoff",
+                dataset_id="my_dataset",
+            )
+            print(bundle.output_dir)
             '''
         ).strip(),
         learnings=(
-            "The handoff surface should feel predictable whether you start from CLI or Python.",
-            "A tiny open-order list is more useful than a large first JSON payload.",
+            "The public Python surface should be as short as the CLI story: point to a file, then open the report.",
+            "For humans, the first success is not a container object but a saved result they can inspect immediately.",
         ),
     ),
     ExampleRecipe(

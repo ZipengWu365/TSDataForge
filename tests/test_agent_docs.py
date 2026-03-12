@@ -99,6 +99,16 @@ def test_example_catalog_and_docs_site(tmp_path: Path):
     assert (tmp_path / "docs_site" / "search-index.json").exists()
     assert (tmp_path / "docs_site" / "api-manifest.json").exists()
 
+    csv_example = (tmp_path / "docs_site" / "examples" / "csv_to_report.html").read_text(encoding="utf-8")
+    assert "Run this example in three steps" in csv_example
+    assert 'pandas' in csv_example
+    assert 'report.html' in csv_example
+    assert 'handoff(' in csv_example
+
+    cookbook = (tmp_path / "docs_site" / "cookbook.html").read_text(encoding="utf-8")
+    assert "Start here with your own CSV or DataFrame" in cookbook
+    assert "csv_to_report" in cookbook
+
 
 
 def test_api_reference_manifest_and_markdown():

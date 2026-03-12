@@ -533,6 +533,11 @@ def _bullets(items: Iterable[str]) -> str:
 
 
 
+def _ordered_list(items: Iterable[str]) -> str:
+    return "<ol>" + ''.join([f"<li>{escape(item)}</li>" for item in items]) + "</ol>"
+
+
+
 def _table(headers: list[str], rows: list[list[str]]) -> str:
     head = ''.join([f"<th>{escape(h)}</th>" for h in headers])
     body = ''.join(["<tr>" + ''.join([f"<td>{cell}</td>" for cell in row]) + "</tr>" for row in rows])
@@ -619,6 +624,12 @@ bundle = handoff(
             _tr(lang, 'If the first column is monotonic increasing, it is treated as time.', '如果第一列单调递增，它会被当作时间轴。'),
             _tr(lang, 'Otherwise the loaded matrix follows the normal shape rules below.', '否则加载出来的矩阵会按下面的 shape 规则解释。'),
         ]),
+    )
+    body += _card(
+        _tr(lang, '4) Want one human-first example?', '4) Want one human-first example?'),
+        "<p>"
+        + escape(_tr(lang, 'Open the CSV example if you want the sklearn-style path: read a file, call `report(...)`, then open `report.html`.', 'Open the CSV example if you want the sklearn-style path: read a file, call `report(...)`, then open `report.html`.'))
+        + "</p><p><a href='examples/csv_to_report.html'><code>csv_to_report</code></a> · <a href='examples/npy_to_handoff_bundle.html'><code>npy_to_handoff_bundle</code></a></p>",
     )
     body += "</div>"
     body += f"<div class='section'><h3>{escape(_tr(lang, 'Shape rules that decide what TSDataForge sees', '决定 TSDataForge 如何理解数据的 shape 规则'))}</h3>"
@@ -1066,6 +1077,76 @@ def _api_category_summary(cat: APICategory, lang: str) -> str:
 
 
 
+def _example_run_steps(ex: ExampleRecipe, lang: str) -> tuple[str, ...]:
+    if ex.example_id == "csv_to_report":
+        return (
+            _tr(lang, "Read your CSV with pandas and pick one time column plus one or more signal columns.", "Read your CSV with pandas and pick one time column plus one or more signal columns."),
+            _tr(lang, "Pass `values` and `time=` into `report(...)` to save the first human-readable `report.html`.", "Pass `values` and `time=` into `report(...)` to save the first human-readable `report.html`."),
+            _tr(lang, "If you want a shareable folder, call `handoff(...)` and open `report.html` inside the saved bundle first.", "If you want a shareable folder, call `handoff(...)` and open `report.html` inside the saved bundle first."),
+        )
+    if ex.example_id == "npy_to_handoff_bundle":
+        return (
+            _tr(lang, "Point `report(...)` and `handoff(...)` at your own `.npy` file.", "Point `report(...)` and `handoff(...)` at your own `.npy` file."),
+            _tr(lang, "Run the script once and let TSDataForge save the report plus the handoff folder.", "Run the script once and let TSDataForge save the report plus the handoff folder."),
+            _tr(lang, "Open `report.html` first, then use the bundle sidecars only when you need the next task or a machine-readable handoff.", "Open `report.html` first, then use the bundle sidecars only when you need the next task or a machine-readable handoff."),
+        )
+    if "report.html" in ex.outputs:
+        return (
+            _tr(lang, "Copy the code into a notebook or script and replace the data source or parameters with your own.", "Copy the code into a notebook or script and replace the data source or parameters with your own."),
+            _tr(lang, "Run the example once without adding extra abstractions.", "Run the example once without adding extra abstractions."),
+            _tr(lang, "Open the saved report or printed output before deciding what to model next.", "Open the saved report or printed output before deciding what to model next."),
+        )
+    return (
+        _tr(lang, "Copy the smallest code block that matches your goal.", "Copy the smallest code block that matches your goal."),
+        _tr(lang, "Replace the example input or parameters with your own data or task settings.", "Replace the example input or parameters with your own data or task settings."),
+        _tr(lang, "Look at the first saved artifact or printed shape/schema before expanding the workflow.", "Look at the first saved artifact or printed shape/schema before expanding the workflow."),
+    )
+
+
+
+def _example_first_result(ex: ExampleRecipe, lang: str) -> str:
+    if ex.example_id == "csv_to_report":
+        return _tr(
+            lang,
+            "You should get a standalone `report.html` plus a `my_series_handoff/` directory. Open the HTML report first because that is the shortest human check that the data was interpreted correctly.",
+            "You should get a standalone `report.html` plus a `my_series_handoff/` directory. Open the HTML report first because that is the shortest human check that the data was interpreted correctly.",
+        )
+    if ex.example_id == "npy_to_handoff_bundle":
+        return _tr(
+            lang,
+            "You should get `report.html` inside the saved bundle plus card/context/index sidecars. Read the report first; the JSON and Markdown files are for handoff, not for the first visual check.",
+            "You should get `report.html` inside the saved bundle plus card/context/index sidecars. Read the report first; the JSON and Markdown files are for handoff, not for the first visual check.",
+        )
+    if "report.html" in ex.outputs:
+        return _tr(
+            lang,
+            "A saved `report.html` is the first thing to inspect. If the report matches your expectation, only then move on to taskification, cards, or downstream modeling.",
+            "A saved `report.html` is the first thing to inspect. If the report matches your expectation, only then move on to taskification, cards, or downstream modeling.",
+        )
+    return _tr(
+        lang,
+        "The first result is usually the printed shape, schema, or saved artifact listed above. Use that to confirm the workflow before composing more steps.",
+        "The first result is usually the printed shape, schema, or saved artifact listed above. Use that to confirm the workflow before composing more steps.",
+    )
+
+
+
+def _example_human_note(ex: ExampleRecipe, lang: str) -> str | None:
+    if ex.example_id == "csv_to_report":
+        return _tr(
+            lang,
+            "This is the human-first example for bringing your own data into TSDataForge. Replace the file path and column names, then run it like a normal Python script.",
+            "This is the human-first example for bringing your own data into TSDataForge. Replace the file path and column names, then run it like a normal Python script.",
+        )
+    if ex.example_id == "npy_to_handoff_bundle":
+        return _tr(
+            lang,
+            "Use this when your dataset is already saved as a NumPy array and you want the shortest public surface, not the internal container APIs.",
+            "Use this when your dataset is already saved as a NumPy array and you want the shortest public surface, not the internal container APIs.",
+        )
+    return None
+
+
 def _example_page(ex: ExampleRecipe, *, lang: str) -> str:
     routes = example_eda_routes(ex, top_k=3)
     title = ex.title
@@ -1087,6 +1168,44 @@ def _example_page(ex: ExampleRecipe, *, lang: str) -> str:
     )
     return _page(title, body, lang=lang, slug=f"examples/{ex.example_id}.html", base="../", level=1)
 
+
+
+def _example_page_human(ex: ExampleRecipe, *, lang: str) -> str:
+    routes = example_eda_routes(ex, top_k=3)
+    title = ex.title
+    summary = ex.summary
+    goal = ex.goal
+    learnings = ex.learnings
+    human_note = _example_human_note(ex, lang)
+    body = f"<div class='breadcrumbs'><a href='../cookbook.html'>{escape(_tr(lang, 'Examples', 'Examples'))}</a> / {escape(title)}</div>"
+    body += _hero(
+        title,
+        summary,
+        [escape(_tr(lang, *CATEGORY_LABELS.get(ex.category, (ex.category, ex.category)))), ex.difficulty, *ex.keywords[:3]],
+        pills=[*ex.audience[:3]],
+    )
+    if human_note:
+        body += (
+            "<div class='section'><div class='notice'><strong>"
+            + escape(_tr(lang, 'Why open this one first', 'Why open this one first'))
+            + ":</strong> "
+            + escape(human_note)
+            + "</div></div>"
+        )
+    body += "<div class='section'><div class='grid'>"
+    body += _card(_tr(lang, 'What this example solves', 'What this example solves'), f"<p>{escape(goal)}</p>")
+    body += _card(_tr(lang, 'Run this example in three steps', 'Run this example in three steps'), _ordered_list(_example_run_steps(ex, lang)))
+    body += _card(_tr(lang, 'What you should look at first', 'What you should look at first'), f"<p>{escape(_example_first_result(ex, lang))}</p>")
+    body += "</div></div>"
+    body += "<div class='section'><div class='grid tight'>"
+    body += _card(_tr(lang, 'Outputs', 'Outputs'), f"<p>{escape(', '.join(ex.outputs) or 'none')}</p>")
+    body += _card(_tr(lang, 'Related APIs', 'Related APIs'), ''.join([f"<span class='badge'>{escape(item)}</span>" for item in ex.related_api]) or "<p>none</p>")
+    body += _card(_tr(lang, 'Typical EDA triggers', 'Typical EDA triggers'), "<div class='badges'>" + ''.join([f"<span class='badge'>{escape(_route_title(r.route_id, r.title, r.summary, lang)[0])}</span>" for r in routes]) + "</div>")
+    body += "</div></div>"
+    body += "<div class='section'>" + _card(_tr(lang, 'Code', 'Code'), f"<pre><code>{escape(ex.code)}</code></pre>") + "</div>"
+    body += "<div class='section'>" + _card(_tr(lang, 'What you learn', 'What you learn'), _bullets(learnings)) + "</div>"
+    body += "<div class='section'>" + _card(_tr(lang, 'Next step', 'Next step'), f"<p>{escape(_tr(lang, 'Run this example first, then feed the output into EDA, taskify, or artifact cards.', 'Run this example first, then feed the output into EDA, taskify, or artifact cards.'))}</p>") + "</div>"
+    return _page(title, body, lang=lang, slug=f"examples/{ex.example_id}.html", base="../", level=1)
 
 
 def _api_category_page(cat: APICategory, *, lang: str) -> str:
@@ -1496,6 +1615,40 @@ def _cookbook_page(lang: str, grouped: dict[str, list[ExampleRecipe]]) -> str:
     body += f"<div class='section'><h2>{escape(_tr(lang, 'Common EDA findings -> which examples to open next', '常见 EDA 发现 -> 应该看哪些案例'))}</h2>{_route_table(lang)}</div>"
     return _page("TSDataForge Examples", body, lang=lang, slug="cookbook.html")
 
+
+
+def _cookbook_page_human(lang: str, grouped: dict[str, list[ExampleRecipe]]) -> str:
+    body = _hero(
+        _tr(lang, "Examples: find the shortest runnable path for a real goal", "Examples: find the shortest runnable path for a real goal"),
+        _tr(lang, "Examples are the main distribution unit of a research package. They should be grouped by user intent, not by internal module layout.", "Examples are the main distribution unit of a research package. They should be grouped by user intent, not by internal module layout."),
+        ["goal-oriented", "copy/paste", "EDA-linked"],
+        pills=["quickstart", "real data", "control/causal", "agent", "launch"],
+    )
+    body += _toc([(k, _tr(lang, *CATEGORY_LABELS.get(k, (k, k)))) for k in grouped])
+    body += f"<div class='section'>" + _card(_tr(lang, 'How to use this page', 'How to use this page'), _bullets([
+        _tr(lang, "If you want to run your own dataset first, open `csv_to_report` or `npy_to_handoff_bundle` before everything else.", "If you want to run your own dataset first, open `csv_to_report` or `npy_to_handoff_bundle` before everything else."),
+        _tr(lang, "Then move to the category that matches your intent.", "Then move to the category that matches your intent."),
+        _tr(lang, "Choose the closest runnable example before you read more theory.", "Choose the closest runnable example before you read more theory."),
+        _tr(lang, "After the example runs, add EDA, taskify, and cards/context.", "After the example runs, add EDA, taskify, and cards/context."),
+    ])) + "</div>"
+    body += f"<div class='section'><div class='grid'>"
+    body += _card(
+        _tr(lang, 'Start here with your own CSV or DataFrame', 'Start here with your own CSV or DataFrame'),
+        "<p>"
+        + escape(_tr(lang, 'This is the most human example in the public docs: read a table, pick columns, call `report(...)`, then open `report.html`.', 'This is the most human example in the public docs: read a table, pick columns, call `report(...)`, then open `report.html`.'))
+        + "</p><p><a href='examples/csv_to_report.html'><code>csv_to_report</code></a></p>",
+    )
+    body += _card(
+        _tr(lang, 'Already have a NumPy file?', 'Already have a NumPy file?'),
+        "<p>"
+        + escape(_tr(lang, 'Open the `.npy` example if your dataset is already saved as an array and you want the shortest report + handoff path.', 'Open the `.npy` example if your dataset is already saved as an array and you want the shortest report + handoff path.'))
+        + "</p><p><a href='examples/npy_to_handoff_bundle.html'><code>npy_to_handoff_bundle</code></a></p>",
+    )
+    body += "</div></div>"
+    for key, items in grouped.items():
+        body += f"<div class='section' id='{escape(key)}'><div class='kicker'>{escape(key)}</div><h2>{escape(_tr(lang, *CATEGORY_LABELS.get(key, (key, key))))}</h2>{_example_cards(items, lang=lang)}</div>"
+    body += f"<div class='section'><h2>{escape(_tr(lang, 'Common EDA findings -> which examples to open next', 'Common EDA findings -> which examples to open next'))}</h2>{_route_table(lang)}</div>"
+    return _page("TSDataForge Examples", body, lang=lang, slug="cookbook.html")
 
 
 def _taskification_page(lang: str) -> str:
@@ -1998,7 +2151,7 @@ def generate_docs_site(output_dir: str | Path, *, title: str = "TSDataForge Docs
         "playbooks.html": _playbooks_page("en"),
         "starter-kits.html": _starter_kits_page("en"),
         "positioning.html": _positioning_page("en", build_positioning_matrix(language="en")),
-        "cookbook.html": _cookbook_page("en", en_grouped),
+        "cookbook.html": _cookbook_page_human("en", en_grouped),
         "taskification.html": _taskification_page("en"),
         "agent-playbook.html": _agent_playbook_page("en"),
         "use-cases.html": _use_cases_page("en"),
@@ -2015,7 +2168,7 @@ def generate_docs_site(output_dir: str | Path, *, title: str = "TSDataForge Docs
         "playbooks.html": _playbooks_page("zh"),
         "starter-kits.html": _starter_kits_page("zh"),
         "positioning.html": _positioning_page("zh", build_positioning_matrix(language="zh")),
-        "cookbook.html": _cookbook_page("zh", zh_grouped),
+        "cookbook.html": _cookbook_page_human("zh", zh_grouped),
         "taskification.html": _taskification_page("zh"),
         "agent-playbook.html": _agent_playbook_page("zh"),
         "use-cases.html": _use_cases_page("zh"),
@@ -2039,7 +2192,7 @@ def generate_docs_site(output_dir: str | Path, *, title: str = "TSDataForge Docs
     search_items: list[dict] = []
     for ex in en_examples:
         p = examples_dir / f"{ex.example_id}.html"
-        p.write_text(_example_page(ex, lang="en"), encoding="utf-8")
+        p.write_text(_example_page_human(ex, lang="en"), encoding="utf-8")
         result.example_pages.append(str(p))
         search_items.append({
             "kind": "example",
@@ -2054,7 +2207,7 @@ def generate_docs_site(output_dir: str | Path, *, title: str = "TSDataForge Docs
         })
     for ex in zh_examples:
         p = zh_examples_dir / f"{ex.example_id}.html"
-        p.write_text(_example_page(ex, lang="zh"), encoding="utf-8")
+        p.write_text(_example_page_human(ex, lang="zh"), encoding="utf-8")
         result.example_pages.append(str(p))
         search_items.append({
             "kind": "example",
