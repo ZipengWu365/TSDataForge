@@ -394,6 +394,18 @@ It pairs well with:
 
 ---
 
+## Community and citation
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - how to propose fixes, tests, and docs updates
+- [SECURITY.md](SECURITY.md) - how to report security issues privately
+- [SUPPORT.md](SUPPORT.md) - what to include in a usage question or bug report
+- [CITATION.cff](CITATION.cff) - machine-readable citation metadata
+- [LICENSE](LICENSE) - MIT license
+
+If you use TSDataForge in research, teaching, or an internal platform, cite the repository and include the version or commit you used.
+
+---
+
 ## Release note for this local snapshot
 
 This artifact contains the package, docs source, release scaffolding, schemas, and demo assets.

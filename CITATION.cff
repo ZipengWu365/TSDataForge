@@ -1,10 +1,20 @@
 cff-version: 1.2.0
 title: TSDataForge
-message: "If you use TSDataForge, please cite the software artifact."
+message: "If you use TSDataForge, please cite the software artifact and include the version or commit when possible."
 type: software
 authors:
-  - family-names: OpenAI
-    given-names: ChatGPT
-repository-code: https://example.invalid/tsdataforge
+  - family-names: Wu
+    given-names: Zipeng
+    email: zxw365@student.bham.ac.uk
+    affiliation: University of Birmingham
+abstract: "Time-series profiling and handoff software for turning raw datasets into reports, dataset cards, compact contexts, decision records, and reusable bundles."
+keywords:
+  - time-series
+  - data profiling
+  - dataset cards
+  - handoff
+  - signal processing
+repository-code: https://github.com/ZipengWu365/TSDataForge
+url: https://zipengwu365.github.io/TSDataForge/
 license: MIT
 version: 0.3.7
